@@ -40,7 +40,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir _site
-          cp index.html _headers _site/
+          cp index.html _site/
           cp -R styles src _site/
           cp sample-contact-form.json _site/
       - uses: actions/upload-pages-artifact@v3
