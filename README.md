@@ -108,7 +108,7 @@ npm test
 
 ### Static deployment
 
-Publish the repository root as the site directory. No build or install step is needed. The included Netlify and Vercel configuration files are ready for static hosting; GitHub Pages can publish the root directory from `main` through repository Pages settings.
+GitHub Actions runs the dependency-free regression suite for pull requests and publishes the repository's static application to GitHub Pages after changes merge to `main`.
 
 Form definitions are stored in the current browser only. Preview submission is a local demonstration and does not transmit responses to a server. Configure a real submission service before collecting production data.
 
