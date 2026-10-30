@@ -53,7 +53,9 @@ FF.dispatch = function dispatch(action) {
     case A.ADD_ELEMENT: {
       pushUndo(state);
       const el = action.element;
-      const insertAt = action.insertIndex !== undefined ? action.insertIndex : state.elements.length;
+      if (!el || !FF.Validation.FIELD_TYPES.has(el.type) || state.elements.length >= 200 || !FF.Safe.isSafeId(el.id) || state.elements.some(existing => existing.id === el.id)) break;
+      const requestedIndex = Number.isInteger(action.insertIndex) ? action.insertIndex : state.elements.length;
+      const insertAt = Math.max(0, Math.min(state.elements.length, requestedIndex));
       const newElements = [...state.elements];
       newElements.splice(insertAt, 0, el);
       newElements.forEach((e, i) => { e.order = i; });
@@ -110,6 +112,7 @@ FF.dispatch = function dispatch(action) {
     case A.REORDER_ELEMENTS: {
       pushUndo(state);
       const { fromIndex, toIndex } = action;
+      if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex) || fromIndex < 0 || fromIndex >= state.elements.length || toIndex < 0 || toIndex >= state.elements.length || fromIndex === toIndex) break;
       const arr = [...state.elements];
       const [moved] = arr.splice(fromIndex, 1);
       arr.splice(toIndex, 0, moved);
@@ -123,7 +126,7 @@ FF.dispatch = function dispatch(action) {
     case A.DUPLICATE_ELEMENT: {
       pushUndo(state);
       const src = state.elements.find(e => e.id === action.id);
-      if (src) {
+      if (src && state.elements.length < 200) {
         const copy = JSON.parse(JSON.stringify(src));
         copy.id = FF.Storage.generateId();
         copy.props.label = src.props.label + ' (Copy)';
@@ -200,6 +203,7 @@ FF.dispatch = function dispatch(action) {
     }
 
     case A.SET_THEME: {
+      if (!['default','dark','minimal','corporate'].includes(action.theme)) break;
       state.activeTheme = action.theme;
       state.isDirty = true;
       logActivity('Changed theme to: ' + action.theme);

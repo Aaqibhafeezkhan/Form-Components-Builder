@@ -95,27 +95,27 @@ FF.Preview = (() => {
 
     if (['divider', 'section-header', 'rich-text', 'hidden'].includes(type)) {
       if (type === 'divider')        wrap.innerHTML = `<hr class="preview-divider-line">`;
-      if (type === 'section-header') wrap.innerHTML = `<h3 class="preview-section-heading">${props.label}</h3>`;
-      if (type === 'rich-text')      wrap.innerHTML = `<p class="preview-rich-label">${props.label}</p>`;
+      if (type === 'section-header') wrap.innerHTML = `<h3 class="preview-section-heading">${FF.Safe.escapeHtml(props.label)}</h3>`;
+      if (type === 'rich-text')      wrap.innerHTML = `<p class="preview-rich-label">${FF.Safe.escapeHtml(props.label)}</p>`;
       if (type === 'hidden')         wrap.style.display = 'none';
       return wrap;
     }
 
     const isCheckboxLike = type === 'checkbox' || type === 'toggle';
     const labelHtml = !props.hideLabel && !isCheckboxLike
-      ? `<label class="preview-label" for="pv-${id}">${props.label}${props.required ? ' <span class="preview-required" aria-hidden="true">*</span>' : ''}</label>`
+      ? `<label class="preview-label" for="pv-${id}">${FF.Safe.escapeHtml(props.label)}${props.required ? ' <span class="preview-required" aria-hidden="true">*</span>' : ''}</label>`
       : '';
 
     let fieldHtml = '';
 
     if (type === 'text' || type === 'email' || type === 'tel' || type === 'url') {
-      fieldHtml = `<input type="${type}" id="pv-${id}" class="preview-input" placeholder="${props.placeholder || ''}" ${props.required ? 'required' : ''} autocomplete="off" data-pid="${id}">`;
+      fieldHtml = `<input type="${type}" id="pv-${id}" class="preview-input" placeholder="${FF.Safe.escapeHtml(props.placeholder || '')}" ${props.required ? 'required' : ''} autocomplete="off" data-pid="${id}">`;
     } else if (type === 'number') {
       const min = props.validation && props.validation.min !== undefined ? `min="${props.validation.min}"` : '';
       const max = props.validation && props.validation.max !== undefined ? `max="${props.validation.max}"` : '';
-      fieldHtml = `<input type="number" id="pv-${id}" class="preview-input" placeholder="${props.placeholder || ''}" ${min} ${max} ${props.required ? 'required' : ''} data-pid="${id}">`;
+      fieldHtml = `<input type="number" id="pv-${id}" class="preview-input" placeholder="${FF.Safe.escapeHtml(props.placeholder || '')}" ${min} ${max} ${props.required ? 'required' : ''} data-pid="${id}">`;
     } else if (type === 'textarea') {
-      fieldHtml = `<textarea id="pv-${id}" class="preview-input preview-input--textarea" placeholder="${props.placeholder || ''}" rows="4" ${props.required ? 'required' : ''} data-pid="${id}"></textarea>`;
+      fieldHtml = `<textarea id="pv-${id}" class="preview-input preview-input--textarea" placeholder="${FF.Safe.escapeHtml(props.placeholder || '')}" rows="4" ${props.required ? 'required' : ''} data-pid="${id}"></textarea>`;
     } else if (type === 'dropdown') {
       const opts = (props.options || []).map(o => `<option value="${escHtml(o)}">${escHtml(o)}</option>`).join('');
       fieldHtml = `<select id="pv-${id}" class="preview-input" ${props.required ? 'required' : ''} data-pid="${id}"><option value="">-- Select --</option>${opts}</select>`;
@@ -123,14 +123,14 @@ FF.Preview = (() => {
       const opts = (props.options || []).map(o => `<option value="${escHtml(o)}">${escHtml(o)}</option>`).join('');
       fieldHtml = `<select id="pv-${id}" class="preview-input" multiple size="4" ${props.required ? 'required' : ''} data-pid="${id}">${opts}</select>`;
     } else if (type === 'radio') {
-      fieldHtml = `<fieldset class="preview-fieldset"><legend class="preview-legend">${props.label}${props.required ? ' *' : ''}</legend>` +
+      fieldHtml = `<fieldset class="preview-fieldset"><legend class="preview-legend">${FF.Safe.escapeHtml(props.label)}${props.required ? ' *' : ''}</legend>` +
         (props.options || []).map((o, i) =>
           `<label class="preview-option-label"><input type="radio" name="pv-${id}" value="${escHtml(o)}" ${i === 0 && props.required ? 'required' : ''} data-pid="${id}"> ${escHtml(o)}</label>`
         ).join('') + `</fieldset>`;
     } else if (type === 'checkbox') {
-      fieldHtml = `<label class="preview-check-label"><input type="checkbox" id="pv-${id}" class="preview-checkbox" ${props.required ? 'required' : ''} data-pid="${id}"> ${props.label}${props.required ? ' <span class="preview-required">*</span>' : ''}</label>`;
+      fieldHtml = `<label class="preview-check-label"><input type="checkbox" id="pv-${id}" class="preview-checkbox" ${props.required ? 'required' : ''} data-pid="${id}"> ${FF.Safe.escapeHtml(props.label)}${props.required ? ' <span class="preview-required">*</span>' : ''}</label>`;
     } else if (type === 'checkbox-group') {
-      fieldHtml = `<fieldset class="preview-fieldset"><legend class="preview-legend">${props.label}${props.required ? ' *' : ''}</legend>` +
+      fieldHtml = `<fieldset class="preview-fieldset"><legend class="preview-legend">${FF.Safe.escapeHtml(props.label)}${props.required ? ' *' : ''}</legend>` +
         (props.options || []).map(o =>
           `<label class="preview-option-label"><input type="checkbox" name="pv-${id}" value="${escHtml(o)}" data-pid="${id}"> ${escHtml(o)}</label>`
         ).join('') + `</fieldset>`;
@@ -141,13 +141,13 @@ FF.Preview = (() => {
     } else if (type === 'file') {
       fieldHtml = `<input type="file" id="pv-${id}" class="preview-file-input" ${props.required ? 'required' : ''} data-pid="${id}">`;
     } else if (type === 'toggle') {
-      fieldHtml = `<label class="preview-toggle-label"><input type="checkbox" id="pv-${id}" class="preview-toggle-input" role="switch" data-pid="${id}"> <span class="preview-toggle-text">${props.label}</span></label>`;
+      fieldHtml = `<label class="preview-toggle-label"><input type="checkbox" id="pv-${id}" class="preview-toggle-input" role="switch" data-pid="${id}"> <span class="preview-toggle-text">${FF.Safe.escapeHtml(props.label)}</span></label>`;
     } else if (type === 'slider') {
-      const min = (props.validation && props.validation.min) || 0;
-      const max = (props.validation && props.validation.max) || 100;
+      const min = props.validation && props.validation.min !== undefined ? Number(props.validation.min) : 0;
+      const max = props.validation && props.validation.max !== undefined ? Number(props.validation.max) : 100;
       fieldHtml = `<div class="preview-slider-wrap"><input type="range" id="pv-${id}" class="preview-slider-input" min="${min}" max="${max}" value="${min}" data-pid="${id}"><span class="preview-slider-val" id="pv-${id}-val">${min}</span></div>`;
     } else if (type === 'rating') {
-      fieldHtml = `<div class="preview-rating" role="group" aria-label="${props.label}" data-pid="${id}">` +
+      fieldHtml = `<div class="preview-rating" role="group" aria-label="${FF.Safe.escapeHtml(props.label)}" data-pid="${id}">` +
         [1,2,3,4,5].map(n =>
           `<label class="preview-star-label" title="${n} star${n>1?'s':''}"><input type="radio" name="pv-${id}" value="${n}" aria-label="${n} star${n>1?'s':''}"> <span class="preview-star">&#9733;</span></label>`
         ).join('') + `</div>`;
@@ -159,7 +159,7 @@ FF.Preview = (() => {
     }
 
     const helperHtml = props.helperText
-      ? `<p class="preview-helper" id="pv-${id}-helper">${props.helperText}</p>`
+      ? `<p class="preview-helper" id="pv-${id}-helper">${FF.Safe.escapeHtml(props.helperText)}</p>`
       : '';
 
     if (type === 'radio' || type === 'checkbox-group') {
@@ -331,8 +331,8 @@ FF.Preview = (() => {
 
     const header = document.createElement('div');
     header.className = 'preview-form__header';
-    header.innerHTML = `<h1 class="preview-form__title">${state.formConfig.title}</h1>` +
-      (state.formConfig.description ? `<p class="preview-form__desc">${state.formConfig.description}</p>` : '');
+    header.innerHTML = `<h1 class="preview-form__title">${FF.Safe.escapeHtml(state.formConfig.title)}</h1>` +
+      (state.formConfig.description ? `<p class="preview-form__desc">${FF.Safe.escapeHtml(state.formConfig.description)}</p>` : '');
 
     const fieldsWrap = document.createElement('div');
     fieldsWrap.className = 'preview-form__fields';
@@ -343,7 +343,7 @@ FF.Preview = (() => {
       const fieldWrap = buildPreviewField(el);
       fieldsWrap.appendChild(fieldWrap);
       attachFieldListeners(fieldWrap, el, previewForm, validationMode);
-      if (el.props.defaultValue && el.props.defaultValue !== '') {
+      if (el.props.defaultValue !== undefined && el.props.defaultValue !== null && el.props.defaultValue !== '') {
         formValues.set(el.id, el.props.defaultValue);
       }
     });
@@ -381,7 +381,7 @@ FF.Preview = (() => {
 
       if (errors.length) {
         errorSummary.style.display = '';
-        errorSummary.innerHTML = `<strong>Please fix the following errors:</strong><ul>${errors.map(e => `<li>${e}</li>`).join('')}</ul>`;
+        errorSummary.innerHTML = `<strong>Please fix the following errors:</strong><ul>${errors.map(e => `<li>${FF.Safe.escapeHtml(e)}</li>`).join('')}</ul>`;
         errorSummary.focus();
       } else {
         errorSummary.style.display = 'none';

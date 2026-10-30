@@ -6,11 +6,12 @@ FF.Canvas = (() => {
 
   function renderFieldPreview(el) {
     const { type, props } = el;
+    if (!FF.Safe.isSafeId(el.id)) return '<span class="preview-input">Invalid field ID</span>';
     const ph = props.placeholder || '';
     const opts = props.options || [];
 
     if (type === 'text' || type === 'email' || type === 'tel' || type === 'url') {
-      return `<input type="${type}" placeholder="${ph}" class="preview-input" tabindex="-1" aria-hidden="true">`;
+      return `<input type="${type}" placeholder="${FF.Safe.escapeHtml(ph)}" class="preview-input" tabindex="-1" aria-hidden="true">`;
     }
     if (type === 'number') {
       return `<input type="number" placeholder="${ph}" class="preview-input" tabindex="-1" aria-hidden="true">`;
@@ -19,11 +20,11 @@ FF.Canvas = (() => {
       return `<textarea placeholder="${ph}" class="preview-input preview-input--textarea" tabindex="-1" aria-hidden="true" rows="3"></textarea>`;
     }
     if (type === 'dropdown') {
-      const os = opts.map(o => `<option>${o}</option>`).join('');
+      const os = opts.map(o => `<option>${FF.Safe.escapeHtml(o)}</option>`).join('');
       return `<select class="preview-input" tabindex="-1" aria-hidden="true"><option>-- Select --</option>${os}</select>`;
     }
     if (type === 'multi-select') {
-      const os = opts.map(o => `<option>${o}</option>`).join('');
+      const os = opts.map(o => `<option>${FF.Safe.escapeHtml(o)}</option>`).join('');
       return `<select class="preview-input" multiple tabindex="-1" aria-hidden="true" size="3">${os}</select>`;
     }
     if (type === 'radio') {
@@ -32,7 +33,7 @@ FF.Canvas = (() => {
       ).join('');
     }
     if (type === 'checkbox') {
-      return `<label class="preview-radio"><input type="checkbox"> ${props.label}</label>`;
+      return `<label class="preview-radio"><input type="checkbox"> ${FF.Safe.escapeHtml(props.label)}</label>`;
     }
     if (type === 'checkbox-group') {
       return opts.slice(0, 3).map((o, i) =>
@@ -42,14 +43,14 @@ FF.Canvas = (() => {
     if (type === 'date') return `<input type="date" class="preview-input" tabindex="-1" aria-hidden="true">`;
     if (type === 'time') return `<input type="time" class="preview-input" tabindex="-1" aria-hidden="true">`;
     if (type === 'file') return `<div class="preview-file-btn">Choose File</div>`;
-    if (type === 'toggle') return `<label class="preview-toggle-wrap"><input type="checkbox" role="switch" tabindex="-1"> <span class="preview-toggle-label">${props.label}</span></label>`;
+    if (type === 'toggle') return `<label class="preview-toggle-wrap"><input type="checkbox" role="switch" tabindex="-1"> <span class="preview-toggle-label">${FF.Safe.escapeHtml(props.label)}</span></label>`;
     if (type === 'slider') return `<input type="range" class="preview-slider" tabindex="-1" aria-hidden="true">`;
     if (type === 'rating') {
       return `<div class="preview-stars">${'★'.repeat(3)}${'☆'.repeat(2)}</div>`;
     }
     if (type === 'divider') return `<hr class="preview-divider">`;
     if (type === 'section-header') return '';
-    if (type === 'rich-text') return `<p class="preview-rich-text">${props.label}</p>`;
+    if (type === 'rich-text') return `<p class="preview-rich-text">${FF.Safe.escapeHtml(props.label)}</p>`;
     if (type === 'hidden') return `<span class="preview-hidden-badge">hidden value: "${props.defaultValue || ''}"</span>`;
     if (type === 'signature') return `<canvas class="preview-signature-pad" width="300" height="80"></canvas>`;
     return '';
@@ -78,24 +79,24 @@ FF.Canvas = (() => {
 
     let inner = '';
     if (el.type === 'section-header') {
-      inner = `<h3 class="canvas-section-heading">${el.props.label}</h3>`;
+      inner = `<h3 class="canvas-section-heading">${FF.Safe.escapeHtml(el.props.label)}</h3>`;
     } else if (el.type === 'divider') {
       inner = `<hr class="canvas-divider-line">`;
     } else {
       const labelHtml = showLabel
-        ? `<div class="canvas-element__label">${el.props.label}${el.props.required ? ' <span class="canvas-element__required">*</span>' : ''}</div>`
+        ? `<div class="canvas-element__label">${FF.Safe.escapeHtml(el.props.label)}${el.props.required ? ' <span class="canvas-element__required">*</span>' : ''}</div>`
         : '';
       const preview = renderFieldPreview(el);
-      const helper = el.props.helperText ? `<div class="canvas-element__helper">${el.props.helperText}</div>` : '';
+      const helper = el.props.helperText ? `<div class="canvas-element__helper">${FF.Safe.escapeHtml(el.props.helperText)}</div>` : '';
       inner = labelHtml + `<div class="canvas-element__preview">${preview}</div>` + helper;
     }
 
     const idBadge = `<span class="canvas-element__id-badge" title="Field ID: ${el.id}">${el.id.substring(0, 8)}</span>`;
-    const controls = `<div class="canvas-element__controls" role="toolbar" aria-label="Element controls for ${el.props.label}">
-      <button class="elem-ctrl-btn" data-action="move-up"   data-id="${el.id}" title="Move Up"   aria-label="Move ${el.props.label} up">&#8593;</button>
-      <button class="elem-ctrl-btn" data-action="move-down" data-id="${el.id}" title="Move Down" aria-label="Move ${el.props.label} down">&#8595;</button>
-      <button class="elem-ctrl-btn" data-action="duplicate" data-id="${el.id}" title="Duplicate" aria-label="Duplicate ${el.props.label}">&#9866;</button>
-      <button class="elem-ctrl-btn elem-ctrl-btn--danger" data-action="delete" data-id="${el.id}" title="Delete" aria-label="Delete ${el.props.label}">&#10005;</button>
+    const controls = `<div class="canvas-element__controls" role="toolbar" aria-label="Element controls for ${FF.Safe.escapeHtml(el.props.label)}">
+      <button class="elem-ctrl-btn" data-action="move-up"   data-id="${el.id}" title="Move Up"   aria-label="Move ${FF.Safe.escapeHtml(el.props.label)} up">&#8593;</button>
+      <button class="elem-ctrl-btn" data-action="move-down" data-id="${el.id}" title="Move Down" aria-label="Move ${FF.Safe.escapeHtml(el.props.label)} down">&#8595;</button>
+      <button class="elem-ctrl-btn" data-action="duplicate" data-id="${el.id}" title="Duplicate" aria-label="Duplicate ${FF.Safe.escapeHtml(el.props.label)}">&#9866;</button>
+      <button class="elem-ctrl-btn elem-ctrl-btn--danger" data-action="delete" data-id="${el.id}" title="Delete" aria-label="Delete ${FF.Safe.escapeHtml(el.props.label)}">&#10005;</button>
     </div>`;
 
     const conditionalBadge = el.conditionalLogic && el.conditionalLogic.enabled
