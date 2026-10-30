@@ -5,14 +5,11 @@ FF.init = function () {
   FF._initialized = true;
 
   const saved = FF.Storage.load();
+  const storageStatus = FF.Storage.getLoadStatus();
   if (saved) {
-    if (saved.formConfig) {
-      FF.appState.formConfig = Object.assign({}, FF.DEFAULT_FORM_CONFIG, saved.formConfig);
-    }
-    if (saved.elements) {
-      FF.appState.elements = saved.elements.map((e, i) => Object.assign({}, e, { order: i }));
-    }
-    if (saved.activeTheme) {
+    FF.appState.formConfig = Object.assign({}, FF.DEFAULT_FORM_CONFIG, saved.formConfig);
+    FF.appState.elements = saved.elements.map((e, i) => Object.assign({}, e, { order: i }));
+    if (['default', 'dark', 'minimal', 'corporate'].includes(saved.activeTheme)) {
       FF.appState.activeTheme = saved.activeTheme;
     }
   }
@@ -25,6 +22,18 @@ FF.init = function () {
   FF.Modals.init();
 
   FF.Toolbar.applyTheme(FF.appState.activeTheme);
+
+  if (storageStatus === 'invalid' || storageStatus === 'unsupported') {
+    const savedEl = document.getElementById('status-last-saved');
+    if (savedEl) {
+      savedEl.textContent = storageStatus === 'unsupported'
+        ? 'Saved data uses an unsupported version; original data preserved'
+        : 'Saved data is invalid; original data preserved';
+      savedEl.setAttribute('role', 'status');
+      savedEl.title = 'Export or recover your saved data before clearing browser storage. Autosave is paused to prevent overwriting it.';
+    }
+    FF.appState.isDirty = true;
+  }
 
   let autosaveTimer = null;
   FF.EventBus.on('state:changed', () => {

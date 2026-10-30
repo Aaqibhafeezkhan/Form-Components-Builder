@@ -2,6 +2,7 @@ window.FF = window.FF || {};
 
 FF.Storage = (() => {
   const STORAGE_KEY = 'formforge_enterprise_v1';
+  let loadStatus = 'empty';
 
   function generateId() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -11,6 +12,7 @@ FF.Storage = (() => {
   }
 
   function save(state) {
+    if (loadStatus === 'invalid' || loadStatus === 'unsupported') return false;
     try {
       const payload = {
         version: FF.SCHEMA_VERSION,
@@ -22,6 +24,7 @@ FF.Storage = (() => {
         },
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      loadStatus = 'loaded';
       return true;
     } catch (err) {
       console.warn('[Storage] Save failed:', err);
@@ -30,20 +33,50 @@ FF.Storage = (() => {
   }
 
   function load() {
+    let raw;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || !parsed.version || !parsed.data) return null;
-      return parsed.data;
+      raw = localStorage.getItem(STORAGE_KEY);
     } catch (err) {
+      loadStatus = 'invalid';
+      console.warn('[Storage] Read failed:', err);
+      return null;
+    }
+    if (!raw) {
+      loadStatus = 'empty';
+      return null;
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      loadStatus = 'invalid';
       console.warn('[Storage] Load failed:', err);
       return null;
     }
+    if (!parsed || typeof parsed !== 'object' || parsed.version !== FF.SCHEMA_VERSION) {
+      loadStatus = 'unsupported';
+      return null;
+    }
+    const validation = FF.Validation.validateImport(parsed.data);
+    if (!validation.valid) {
+      loadStatus = 'invalid';
+      return null;
+    }
+    loadStatus = 'loaded';
+    return parsed.data;
   }
 
   function clear() {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      loadStatus = 'empty';
+    } catch (err) {
+      console.warn('[Storage] Clear failed:', err);
+    }
+  }
+
+  function getLoadStatus() {
+    return loadStatus;
   }
 
   function formatSaveTime(date) {
@@ -55,5 +88,5 @@ FF.Storage = (() => {
     return new Date(date).toLocaleTimeString();
   }
 
-  return { generateId, save, load, clear, formatSaveTime };
+  return { generateId, save, load, clear, getLoadStatus, formatSaveTime };
 })();

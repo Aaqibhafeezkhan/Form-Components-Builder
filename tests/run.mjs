@@ -6,10 +6,16 @@ import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..')
-const context={URL,Date,Math,Set,Map,console:{warn(){},error(){}}}
+const stored=new Map()
+const localStorage={
+  getItem(key){return stored.has(key)?stored.get(key):null},
+  setItem(key,value){stored.set(key,String(value))},
+  removeItem(key){stored.delete(key)}
+}
+const context={URL,Date,Math,Set,Map,localStorage,console:{warn(){},error(){}}}
 context.window=context
 vm.createContext(context)
-for(const file of ['src/state.js','src/utils/safe.js','src/utils/validation.js']) {
+for(const file of ['src/state.js','src/utils/safe.js','src/utils/validation.js','src/utils/storage.js']) {
   vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file})
 }
 const FF=context.FF
@@ -41,4 +47,27 @@ test('imports reject duplicate IDs and unsupported element types',()=>{
   assert.equal(FF.Validation.validateImport(data).valid,true)
   data.elements.push({...data.elements[0]})
   assert.equal(FF.Validation.validateImport(data).valid,false)
+})
+test('versioned storage round-trips valid data',()=>{
+  stored.clear()
+  assert.equal(FF.Storage.getLoadStatus(),'empty')
+  assert.equal(FF.Storage.save(sample()),true)
+  const loaded=FF.Storage.load()
+  assert.equal(loaded.formConfig.title,'Contact')
+  assert.equal(FF.Storage.getLoadStatus(),'loaded')
+})
+test('malformed storage is preserved and blocks autosave overwrite',()=>{
+  stored.set('formforge_enterprise_v1','{broken')
+  assert.equal(FF.Storage.load(),null)
+  assert.equal(FF.Storage.getLoadStatus(),'invalid')
+  assert.equal(FF.Storage.save(sample()),false)
+  assert.equal(stored.get('formforge_enterprise_v1'),'{broken')
+})
+test('unknown future storage versions are preserved',()=>{
+  const future=JSON.stringify({version:'99.0',data:sample()})
+  stored.set('formforge_enterprise_v1',future)
+  assert.equal(FF.Storage.load(),null)
+  assert.equal(FF.Storage.getLoadStatus(),'unsupported')
+  assert.equal(FF.Storage.save(sample()),false)
+  assert.equal(stored.get('formforge_enterprise_v1'),future)
 })
