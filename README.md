@@ -7,7 +7,7 @@ A production-ready, drag-and-drop form builder application built with Vanilla HT
 ## Features
 
 ### Component Palette
-- 18 draggable component types organized in 3 collapsible groups (Basic, Advanced, Layout)
+- 22 draggable component types organized in 3 collapsible groups (Basic, Advanced, Layout)
 - Searchable component list with live filtering
 - Click-to-add or drag-to-canvas placement
 - Resizable panel with drag gutters
@@ -82,7 +82,7 @@ A production-ready, drag-and-drop form builder application built with Vanilla HT
 
 ## Setup
 
-No build step required. Open `index.html` directly in a browser, or serve from any static file server:
+No build step is required. FormForge is a static, browser-only application. Serve the repository root with any static file server or static host:
 
 ```bash
 npx serve .
@@ -97,6 +97,20 @@ python -m http.server 8080
 Then open: `http://localhost:8080`
 
 **Requirements:** Chrome 110+, Firefox 110+, Safari 16+
+
+### Tests
+
+Use Node.js 18 or newer to run the dependency-free regression suite:
+
+```bash
+npm test
+```
+
+### Static deployment
+
+Publish the repository root as the site directory. No build or install step is needed. The included Netlify and Vercel configuration files are ready for static hosting; GitHub Pages can publish the root directory from `main` through repository Pages settings.
+
+Form definitions are stored in the current browser only. Preview submission is a local demonstration and does not transmit responses to a server. Configure a real submission service before collecting production data.
 
 **CDN Dependencies (loaded automatically):**
 - Inter font from Google Fonts

@@ -41,8 +41,9 @@ FF.Toolbar = (() => {
   }
 
   function applyTheme(theme) {
-    document.body.setAttribute('data-theme', theme);
-    document.body.className = 'theme-' + theme;
+    const safeTheme = ['default','dark','minimal','corporate'].includes(theme) ? theme : 'default';
+    document.body.setAttribute('data-theme', safeTheme);
+    document.body.className = 'theme-' + safeTheme;
   }
 
   function applyZoom() {
@@ -64,27 +65,29 @@ FF.Toolbar = (() => {
 
   function initKeyboardShortcuts() {
     document.addEventListener('keydown', e => {
+      const target = e.target;
+      const isEditing = target && (target.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(target.tagName));
       const ctrl = e.ctrlKey || e.metaKey;
 
-      if (ctrl && e.key === 'z' && !e.shiftKey) {
+      if (!isEditing && ctrl && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         FF.dispatch({ type: FF.ACTIONS.UNDO });
       }
-      if ((ctrl && e.key === 'y') || (ctrl && e.shiftKey && e.key === 'z')) {
+      if (!isEditing && ((ctrl && e.key === 'y') || (ctrl && e.shiftKey && e.key === 'z'))) {
         e.preventDefault();
         FF.dispatch({ type: FF.ACTIONS.REDO });
       }
-      if (ctrl && e.key === 's') {
+      if (!isEditing && ctrl && e.key === 's') {
         e.preventDefault();
-        FF.Storage.save(FF.appState);
-        FF.dispatch({ type: FF.ACTIONS.MARK_SAVED });
-        announce('Form saved');
+        const savedSuccessfully = FF.Storage.save(FF.appState);
+        if (savedSuccessfully) { FF.dispatch({ type: FF.ACTIONS.MARK_SAVED }); announce('Form saved'); }
+        else announce('Save failed. Your changes remain available in this session.');
       }
-      if (ctrl && e.key === 'p') {
+      if (!isEditing && ctrl && e.key === 'p') {
         e.preventDefault();
         FF.Preview.open();
       }
-      if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (!isEditing && (e.key === 'Delete' || e.key === 'Backspace')) {
         const active = document.activeElement;
         if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
         const state = FF.appState;
@@ -96,14 +99,14 @@ FF.Toolbar = (() => {
           FF.dispatch({ type: FF.ACTIONS.REMOVE_ELEMENT, id: state.selectedElementId });
         }
       }
-      if (ctrl && e.key === 'd') {
+      if (!isEditing && ctrl && e.key === 'd') {
         e.preventDefault();
         const state = FF.appState;
         if (state.selectedElementId) {
           FF.dispatch({ type: FF.ACTIONS.DUPLICATE_ELEMENT, id: state.selectedElementId });
         }
       }
-      if (e.key === 'F12') {
+      if (!isEditing && e.key === 'F12') {
         e.preventDefault();
         document.body.classList.toggle('high-contrast');
       }

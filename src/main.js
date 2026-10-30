@@ -31,8 +31,9 @@ FF.init = function () {
     clearTimeout(autosaveTimer);
     autosaveTimer = setTimeout(() => {
       if (FF.appState.isDirty) {
-        FF.Storage.save(FF.appState);
-        FF.dispatch({ type: FF.ACTIONS.MARK_SAVED });
+        const savedSuccessfully = FF.Storage.save(FF.appState);
+        if (savedSuccessfully) FF.dispatch({ type: FF.ACTIONS.MARK_SAVED });
+        else console.warn('[FormForge] Autosave failed; edits remain unsaved.');
       }
     }, FF.AUTOSAVE_DELAY);
   });

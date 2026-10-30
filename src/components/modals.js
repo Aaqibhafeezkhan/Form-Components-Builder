@@ -292,6 +292,7 @@ FF.Modals = (() => {
       const raw = document.getElementById('import-json-textarea')?.value?.trim();
       const errEl = document.getElementById('import-error');
       if (!raw) { showImportError(errEl, 'Please paste or upload a JSON file.'); return; }
+      if (raw.length > 1024 * 1024) { showImportError(errEl, 'Import files must be 1 MB or smaller.'); return; }
       let parsed;
       try { parsed = JSON.parse(raw); }
       catch (e) { showImportError(errEl, 'Invalid JSON: ' + e.message); return; }
@@ -416,12 +417,13 @@ FF.Modals = (() => {
       const description = document.getElementById('set-desc')?.value;
       const submitLabel = document.getElementById('set-submit-label')?.value;
       const successMessage = document.getElementById('set-success-msg')?.value;
-      const redirectUrl = document.getElementById('set-redirect')?.value;
+      const redirectUrl = document.getElementById('set-redirect')?.value?.trim();
       const validationMode = document.getElementById('set-validation-mode')?.value;
       const customCss = document.getElementById('set-custom-css')?.value;
       const activeThemeBtn = body.querySelector('.theme-btn--active');
       const selectedTheme = activeThemeBtn ? activeThemeBtn.getAttribute('data-theme') : state.activeTheme;
 
+      if (!FF.Safe.isSafeRedirectUrl(redirectUrl)) { const input=document.getElementById('set-redirect'); if(input){input.setAttribute('aria-invalid','true');input.focus();} announce('Enter a valid HTTP or HTTPS redirect URL.'); return; }
       FF.dispatch({ type: FF.ACTIONS.UPDATE_FORM_CONFIG, config: { title, description, submitLabel, successMessage, redirectUrl, validationMode, customCss } });
       FF.dispatch({ type: FF.ACTIONS.SET_THEME, theme: selectedTheme });
       closeModal('modal-settings');
