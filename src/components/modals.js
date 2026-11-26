@@ -186,10 +186,10 @@ FF.Modals = (() => {
     function renderTabs() {
       const code = getCode(activeTab);
       const lang = getLang(activeTab);
-      let highlighted = code;
+      let highlighted = FF.Safe.escapeHtml(code);
       try {
         if (window.hljs) highlighted = window.hljs.highlight(code, { language: lang }).value;
-      } catch(e) {}
+      } catch(e) { highlighted = FF.Safe.escapeHtml(code); }
 
       body.innerHTML = `
         <div class="export-tabs" role="tablist">
@@ -239,8 +239,9 @@ FF.Modals = (() => {
         qrContainer.style.display = '';
         qrContainer.innerHTML = '<p style="font-size:12px;color:var(--color-text-muted);margin-bottom:8px">QR code for form JSON data URL:</p><div id="qr-code-inner"></div>';
         const dataStr = 'data:application/json;charset=utf-8,' + encodeURIComponent(FF.Export.buildFormJson(state));
-        const safeStr = dataStr.length > 2953 ? dataStr.substring(0, 2953) : dataStr;
-        if (window.QRCode) {
+        if (dataStr.length > 2953) {
+          qrContainer.innerHTML = '<p style="color:var(--color-danger)">The form is too large for a QR code (about 2.9 KB). Use the JSON download instead.</p>';
+        } else if (window.QRCode) {
           new QRCode(document.getElementById('qr-code-inner'), {
             text: safeStr,
             width: 180,
@@ -300,7 +301,7 @@ FF.Modals = (() => {
       let data = parsed;
       if (parsed.data && parsed.version) data = parsed.data;
 
-      const validation = FF.Validation.validateImport(data);
+      const validation = FF.Validation.validateImport(data, {strict:true});
       if (!validation.valid) {
         showImportError(errEl, 'Import validation failed:\n' + validation.errors.join('\n'));
         return;
@@ -424,6 +425,8 @@ FF.Modals = (() => {
       const selectedTheme = activeThemeBtn ? activeThemeBtn.getAttribute('data-theme') : state.activeTheme;
 
       if (!FF.Safe.isSafeRedirectUrl(redirectUrl)) { const input=document.getElementById('set-redirect'); if(input){input.setAttribute('aria-invalid','true');input.focus();} announce('Enter a valid HTTP or HTTPS redirect URL.'); return; }
+      const cssCheck = FF.Safe.checkCustomCss(customCss);
+      if (!cssCheck.ok) { const input=document.getElementById('set-custom-css'); if(input){input.setAttribute('aria-invalid','true');input.focus();} announce(cssCheck.reason); return; }
       FF.dispatch({ type: FF.ACTIONS.UPDATE_FORM_CONFIG, config: { title, description, submitLabel, successMessage, redirectUrl, validationMode, customCss } });
       FF.dispatch({ type: FF.ACTIONS.SET_THEME, theme: selectedTheme });
       closeModal('modal-settings');
@@ -488,10 +491,10 @@ FF.Modals = (() => {
         const area = document.getElementById('template-preview-area');
         if (!area) return;
         area.style.display = '';
-        const fieldsList = tpl.elements.map(e => `<li>${e.label || e.type}${e.required ? ' *' : ''}</li>`).join('');
+        const fieldsList = tpl.elements.map(e => `<li>${FF.Safe.escapeHtml(e.label || e.type)}${e.required ? ' *' : ''}</li>`).join('');
         area.innerHTML = `<div class="template-preview-box">
-          <h4>${tpl.formConfig.title}</h4>
-          <p>${tpl.formConfig.description}</p>
+          <h4>${FF.Safe.escapeHtml(tpl.formConfig.title)}</h4>
+          <p>${FF.Safe.escapeHtml(tpl.formConfig.description)}</p>
           <ul>${fieldsList}</ul>
           <button class="btn btn--ghost btn--sm" id="btn-close-tpl-preview">Close Preview</button>
         </div>`;
@@ -501,15 +504,21 @@ FF.Modals = (() => {
 
     document.getElementById('btn-save-template')?.addEventListener('click', () => {
       const name = document.getElementById('template-save-name')?.value?.trim();
-      if (!name) { alert('Please enter a template name.'); return; }
-      const inlineTemplates = JSON.parse(localStorage.getItem('ff_custom_templates') || '[]');
+      if (!name) { announce('Please enter a template name.'); return; }
+      if (name.length > 100) { announce('Template names must be 100 characters or fewer.'); return; }
+      let inlineTemplates;
+      try { inlineTemplates = JSON.parse(localStorage.getItem('ff_custom_templates') || '[]'); }
+      catch (error) { announce('Saved templates could not be read; existing data was left unchanged.'); return; }
+      if (!Array.isArray(inlineTemplates)) { announce('Saved templates are invalid; existing data was left unchanged.'); return; }
+      if (inlineTemplates.length >= 50) { announce('A maximum of 50 custom templates can be saved.'); return; }
       inlineTemplates.push({
         name,
         formConfig: FF.appState.formConfig,
         elements: FF.appState.elements,
         savedAt: new Date().toISOString(),
       });
-      localStorage.setItem('ff_custom_templates', JSON.stringify(inlineTemplates));
+      try { localStorage.setItem('ff_custom_templates', JSON.stringify(inlineTemplates)); }
+      catch (error) { announce('Template could not be saved. Check available browser storage.'); return; }
       announce('Template "' + name + '" saved');
       closeModal('modal-templates');
     });
@@ -542,7 +551,7 @@ FF.Modals = (() => {
       : FF.activityLog.map(entry => {
           const d = new Date(entry.timestamp);
           const time = d.toLocaleTimeString();
-          return `<li class="history-item"><span class="history-item__time">${time}</span><span class="history-item__msg">${entry.message}</span></li>`;
+          return `<li class="history-item"><span class="history-item__time">${time}</span><span class="history-item__msg">${FF.Safe.escapeHtml(entry.message)}</span></li>`;
         }).join('');
 
     body.innerHTML = `${exportCsvBtn}<ul class="history-list" role="log" aria-live="polite">${rows}</ul>`;

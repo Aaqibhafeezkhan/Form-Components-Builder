@@ -14,10 +14,10 @@ FF.Canvas = (() => {
       return `<input type="${type}" placeholder="${FF.Safe.escapeHtml(ph)}" class="preview-input" tabindex="-1" aria-hidden="true">`;
     }
     if (type === 'number') {
-      return `<input type="number" placeholder="${ph}" class="preview-input" tabindex="-1" aria-hidden="true">`;
+      return `<input type="number" placeholder="${FF.Safe.escapeHtml(ph)}" class="preview-input" tabindex="-1" aria-hidden="true">`;
     }
     if (type === 'textarea') {
-      return `<textarea placeholder="${ph}" class="preview-input preview-input--textarea" tabindex="-1" aria-hidden="true" rows="3"></textarea>`;
+      return `<textarea placeholder="${FF.Safe.escapeHtml(ph)}" class="preview-input preview-input--textarea" tabindex="-1" aria-hidden="true" rows="3"></textarea>`;
     }
     if (type === 'dropdown') {
       const os = opts.map(o => `<option>${FF.Safe.escapeHtml(o)}</option>`).join('');
@@ -29,7 +29,7 @@ FF.Canvas = (() => {
     }
     if (type === 'radio') {
       return opts.slice(0, 3).map((o, i) =>
-        `<label class="preview-radio"><input type="radio" name="prev-${el.id}" ${i===0?'checked':''}> ${o}</label>`
+        `<label class="preview-radio"><input type="radio" name="prev-${el.id}" ${i===0?'checked':''}> ${FF.Safe.escapeHtml(o)}</label>`
       ).join('');
     }
     if (type === 'checkbox') {
@@ -37,7 +37,7 @@ FF.Canvas = (() => {
     }
     if (type === 'checkbox-group') {
       return opts.slice(0, 3).map((o, i) =>
-        `<label class="preview-radio"><input type="checkbox" ${i===0?'checked':''}> ${o}</label>`
+        `<label class="preview-radio"><input type="checkbox" ${i===0?'checked':''}> ${FF.Safe.escapeHtml(o)}</label>`
       ).join('');
     }
     if (type === 'date') return `<input type="date" class="preview-input" tabindex="-1" aria-hidden="true">`;
@@ -51,12 +51,13 @@ FF.Canvas = (() => {
     if (type === 'divider') return `<hr class="preview-divider">`;
     if (type === 'section-header') return '';
     if (type === 'rich-text') return `<p class="preview-rich-text">${FF.Safe.escapeHtml(props.label)}</p>`;
-    if (type === 'hidden') return `<span class="preview-hidden-badge">hidden value: "${props.defaultValue || ''}"</span>`;
+    if (type === 'hidden') return `<span class="preview-hidden-badge">hidden value: "${FF.Safe.escapeHtml(props.defaultValue || '')}"</span>`;
     if (type === 'signature') return `<canvas class="preview-signature-pad" width="300" height="80"></canvas>`;
     return '';
   }
 
   function renderElement(el, index) {
+    if (!FF.Safe.isSafeId(el.id)) return document.createElement('div');
     const state = FF.appState;
     const isSelected = state.selectedElementId === el.id;
     const isMultiSelected = state.multiSelectedIds && state.multiSelectedIds.has(el.id);
@@ -72,7 +73,8 @@ FF.Canvas = (() => {
     wrap.setAttribute('aria-label', el.props.label + ' (' + el.type + ')');
     wrap.style.width = '100%';
 
-    const widthClass = 'canvas-element--w' + (el.props.width || 100);
+    const width = [25, 50, 75, 100].includes(Number(el.props.width)) ? Number(el.props.width) : 100;
+    const widthClass = 'canvas-element--w' + width;
 
     const isLayout = ['divider', 'section-header', 'rich-text', 'hidden'].includes(el.type);
     const showLabel = !isLayout && el.type !== 'checkbox' && el.type !== 'toggle' && el.type !== 'rich-text' && el.type !== 'divider';

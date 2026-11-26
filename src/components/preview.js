@@ -89,9 +89,10 @@ FF.Preview = (() => {
   function buildPreviewField(el) {
     const { type, props, id } = el;
     const wrap = document.createElement('div');
+    if (!FF.Safe.isSafeId(id)) return wrap;
     wrap.className = 'preview-field-wrap';
     wrap.setAttribute('data-preview-id', id);
-    wrap.style.width = (props.width || 100) + '%';
+    wrap.style.width = ([25,50,75,100].includes(Number(props.width)) ? Number(props.width) : 100) + '%';
 
     if (['divider', 'section-header', 'rich-text', 'hidden'].includes(type)) {
       if (type === 'divider')        wrap.innerHTML = `<hr class="preview-divider-line">`;
@@ -111,8 +112,8 @@ FF.Preview = (() => {
     if (type === 'text' || type === 'email' || type === 'tel' || type === 'url') {
       fieldHtml = `<input type="${type}" id="pv-${id}" class="preview-input" placeholder="${FF.Safe.escapeHtml(props.placeholder || '')}" ${props.required ? 'required' : ''} autocomplete="off" data-pid="${id}">`;
     } else if (type === 'number') {
-      const min = props.validation && props.validation.min !== undefined ? `min="${props.validation.min}"` : '';
-      const max = props.validation && props.validation.max !== undefined ? `max="${props.validation.max}"` : '';
+      const min = props.validation && Number.isFinite(Number(props.validation.min)) && props.validation.min !== '' ? `min="${Number(props.validation.min)}"` : '';
+      const max = props.validation && Number.isFinite(Number(props.validation.max)) && props.validation.max !== '' ? `max="${Number(props.validation.max)}"` : '';
       fieldHtml = `<input type="number" id="pv-${id}" class="preview-input" placeholder="${FF.Safe.escapeHtml(props.placeholder || '')}" ${min} ${max} ${props.required ? 'required' : ''} data-pid="${id}">`;
     } else if (type === 'textarea') {
       fieldHtml = `<textarea id="pv-${id}" class="preview-input preview-input--textarea" placeholder="${FF.Safe.escapeHtml(props.placeholder || '')}" rows="4" ${props.required ? 'required' : ''} data-pid="${id}"></textarea>`;
@@ -143,8 +144,8 @@ FF.Preview = (() => {
     } else if (type === 'toggle') {
       fieldHtml = `<label class="preview-toggle-label"><input type="checkbox" id="pv-${id}" class="preview-toggle-input" role="switch" data-pid="${id}"> <span class="preview-toggle-text">${FF.Safe.escapeHtml(props.label)}</span></label>`;
     } else if (type === 'slider') {
-      const min = props.validation && props.validation.min !== undefined ? Number(props.validation.min) : 0;
-      const max = props.validation && props.validation.max !== undefined ? Number(props.validation.max) : 100;
+      const min = props.validation && Number.isFinite(Number(props.validation.min)) && props.validation.min !== '' ? Number(props.validation.min) : 0;
+      const max = props.validation && Number.isFinite(Number(props.validation.max)) && props.validation.max !== '' ? Number(props.validation.max) : 100;
       fieldHtml = `<div class="preview-slider-wrap"><input type="range" id="pv-${id}" class="preview-slider-input" min="${min}" max="${max}" value="${min}" data-pid="${id}"><span class="preview-slider-val" id="pv-${id}-val">${min}</span></div>`;
     } else if (type === 'rating') {
       fieldHtml = `<div class="preview-rating" role="group" aria-label="${FF.Safe.escapeHtml(props.label)}" data-pid="${id}">` +
