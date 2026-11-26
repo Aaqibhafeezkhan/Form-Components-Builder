@@ -1,7 +1,30 @@
 {
   "name": "formforge-enterprise",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test tests/*.mjs" }
+  "scripts": {
+    "test": "node --test tests/*.mjs"
+  },
+  "description": "Browser-only drag-and-drop form builder with validation, preview and export tools.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aaqibhafeezkhan/Form-Components-Builder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Aaqibhafeezkhan/Form-Components-Builder/issues"
+  },
+  "keywords": [
+    "form-builder",
+    "drag-and-drop",
+    "vanilla-javascript",
+    "json-schema",
+    "html5",
+    "form-generator",
+    "github-pages"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
 }
