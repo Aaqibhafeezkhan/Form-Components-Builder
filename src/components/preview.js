@@ -334,6 +334,67 @@ FF.Preview = (() => {
     signaturePads.push({ canvas, id });
   }
 
+  function applyFieldValue(el, value, previewForm) {
+    const { type, id } = el;
+    const wrap = previewForm.querySelector(`[data-preview-id="${id}"]`);
+    let normalized = value;
+    if (!wrap || type === 'hidden') {
+      setFieldValue(id, value);
+      return;
+    }
+    if (type === 'checkbox' || type === 'toggle') {
+      const input = wrap.querySelector(`[data-pid="${id}"]`);
+      const checked = value === true || value === 1 || value === '1' || value === 'true';
+      if (input) input.checked = checked;
+      normalized = checked;
+    } else if (type === 'radio' || type === 'rating') {
+      const selected = String(value);
+      wrap.querySelectorAll('input[type="radio"]').forEach(input => {
+        input.checked = input.value === selected;
+      });
+      normalized = selected;
+      if (type === 'rating') {
+        wrap.querySelectorAll('.preview-star').forEach((star, index) => {
+          star.classList.toggle('preview-star--active', index < Number(selected));
+        });
+      }
+    } else if (type === 'checkbox-group') {
+      const selected = Array.isArray(value) ? value.map(String) : [String(value)];
+      wrap.querySelectorAll(`input[name="pv-${id}"]`).forEach(input => {
+        input.checked = selected.includes(input.value);
+      });
+      normalized = [...wrap.querySelectorAll(`input[name="pv-${id}"]:checked`)].map(input => input.value);
+    } else if (type === 'multi-select') {
+      const selected = Array.isArray(value) ? value.map(String) : [String(value)];
+      const select = wrap.querySelector(`[data-pid="${id}"]`);
+      if (select) [...select.options].forEach(option => { option.selected = selected.includes(option.value); });
+      normalized = select ? [...select.selectedOptions].map(option => option.value) : [];
+    } else if (type === 'slider') {
+      const input = wrap.querySelector(`[data-pid="${id}"]`);
+      const display = wrap.querySelector(`#pv-${id}-val`);
+      if (input) input.value = String(value);
+      if (display) display.textContent = input ? input.value : String(value);
+      normalized = input ? input.value : String(value);
+    } else {
+      const input = wrap.querySelector(`[data-pid="${id}"]`);
+      if (input && input.type !== 'file') {
+        input.value = String(value);
+        normalized = input.value;
+      }
+    }
+    setFieldValue(id, normalized);
+  }
+
+  function applyDefaultValues(previewForm) {
+    formValues.clear();
+    FF.appState.elements.forEach(el => {
+      const props = el.props || {};
+      if (props.defaultValue !== undefined && props.defaultValue !== null) {
+        applyFieldValue(el, props.defaultValue, previewForm);
+      }
+    });
+  }
+
   function renderPreviewForm(modal) {
     const state = FF.appState;
     const frame = document.getElementById('preview-frame');
@@ -363,9 +424,6 @@ FF.Preview = (() => {
       const fieldWrap = buildPreviewField(el);
       fieldsWrap.appendChild(fieldWrap);
       attachFieldListeners(fieldWrap, el, previewForm, validationMode);
-      if (el.props.defaultValue !== undefined && el.props.defaultValue !== null && el.props.defaultValue !== '') {
-        formValues.set(el.id, el.props.defaultValue);
-      }
     });
 
     const submitBtn = document.createElement('button');
@@ -423,6 +481,7 @@ FF.Preview = (() => {
     frame.appendChild(previewForm);
     frame.appendChild(successMsg);
 
+    applyDefaultValues(previewForm);
     updateAllVisibility(previewForm);
   }
 
@@ -491,6 +550,7 @@ FF.Preview = (() => {
     if (previewForm) {
       previewForm.reset();
       previewForm.style.display = '';
+      applyDefaultValues(previewForm);
     }
     if (successMsg) successMsg.style.display = 'none';
     if (errorSummary) errorSummary.style.display = 'none';

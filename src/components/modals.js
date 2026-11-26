@@ -192,7 +192,7 @@ FF.Modals = (() => {
           qrContainer.innerHTML = '<p style="color:var(--color-danger)">The form is too large for a QR code (about 2.9 KB). Use the JSON download instead.</p>';
         } else if (window.QRCode) {
           new QRCode(document.getElementById('qr-code-inner'), {
-            text: safeStr,
+            text: dataStr,
             width: 180,
             height: 180,
             colorDark: '#1F2937',
