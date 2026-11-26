@@ -71,6 +71,8 @@ FF.Canvas = (() => {
     wrap.setAttribute('data-index', index);
     wrap.setAttribute('role', 'listitem');
     wrap.setAttribute('aria-label', el.props.label + ' (' + el.type + ')');
+    wrap.setAttribute('aria-selected', String(isSelected || isMultiSelected));
+    wrap.tabIndex = 0;
     wrap.style.width = '100%';
 
     const width = [25, 50, 75, 100].includes(Number(el.props.width)) ? Number(el.props.width) : 100;
@@ -120,6 +122,21 @@ FF.Canvas = (() => {
         FF.dispatch({ type: FF.ACTIONS.SELECT_ELEMENT, id: el.id });
       }
     });
+    wrap.addEventListener('keydown', e => {
+      if (e.target.closest('.canvas-element__controls')) return;
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        FF.dispatch({type:e.key === ' ' ? FF.ACTIONS.MULTI_SELECT : FF.ACTIONS.SELECT_ELEMENT,id:el.id});
+        return;
+      }
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      const nextIndex = index + (e.key === 'ArrowUp' ? -1 : 1);
+      if (nextIndex < 0 || nextIndex >= FF.appState.elements.length) return;
+      e.preventDefault();
+      const nextId = FF.appState.elements[nextIndex].id;
+      FF.dispatch({type:e.shiftKey ? FF.ACTIONS.MULTI_SELECT : FF.ACTIONS.SELECT_ELEMENT,id:nextId});
+      requestAnimationFrame(() => canvasEl.querySelector('[data-id="' + nextId + '"]')?.focus());
+    });
 
     return wrap;
   }
@@ -135,6 +152,7 @@ FF.Canvas = (() => {
 
   function render() {
     if (!canvasEl) return;
+    const focusedElementId = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.canvas-element')?.dataset.id : null;
     const state = FF.appState;
     const emptyState = document.getElementById('canvas-empty-state');
 
@@ -172,6 +190,7 @@ FF.Canvas = (() => {
     }
 
     updateStatusBar();
+    if (focusedElementId) canvasEl.querySelector('[data-id="' + focusedElementId + '"]')?.focus();
   }
 
   function updateStatusBar() {
@@ -201,6 +220,16 @@ FF.Canvas = (() => {
     const totalPages = pages.length || 1;
     const curPage = (state.formConfig.activePageIndex || 0) + 1;
     if (pageInd) pageInd.textContent = 'Page ' + curPage + ' of ' + totalPages;
+    const selectedIds = [...state.multiSelectedIds].filter(id=>state.elements.some(element=>element.id===id));
+    const selectedIndexes = selectedIds.map(id=>state.elements.findIndex(element=>element.id===id)).sort((a,b)=>a-b);
+    const duplicateButton = document.getElementById('btn-bulk-duplicate');
+    const moveUpButton = document.getElementById('btn-bulk-move-up');
+    const moveDownButton = document.getElementById('btn-bulk-move-down');
+    const deleteButton = document.getElementById('btn-bulk-delete');
+    if (duplicateButton) duplicateButton.disabled = !selectedIds.length || state.elements.length >= 200;
+    if (moveUpButton) moveUpButton.disabled = !selectedIds.length || selectedIndexes[0] === 0;
+    if (moveDownButton) moveDownButton.disabled = !selectedIds.length || selectedIndexes[selectedIndexes.length-1] === state.elements.length-1;
+    if (deleteButton) deleteButton.disabled = !selectedIds.length;
 
     const scrollContainer = document.getElementById('canvas-scroll-container');
     if (scrollContainer) {
@@ -236,6 +265,25 @@ FF.Canvas = (() => {
       });
       FF.appState.selectedElementId = null;
       FF.EventBus.emit('state:changed', { action: 'SELECT_ALL' });
+    });
+
+    document.getElementById('btn-bulk-duplicate')?.addEventListener('click', () => {
+      FF.dispatch({type:FF.ACTIONS.BULK_DUPLICATE});
+      announce('Selected elements duplicated');
+    });
+    document.getElementById('btn-bulk-move-up')?.addEventListener('click', () => {
+      FF.dispatch({type:FF.ACTIONS.BULK_MOVE,direction:'up'});
+      announce('Selected elements moved up');
+    });
+    document.getElementById('btn-bulk-move-down')?.addEventListener('click', () => {
+      FF.dispatch({type:FF.ACTIONS.BULK_MOVE,direction:'down'});
+      announce('Selected elements moved down');
+    });
+    document.getElementById('btn-bulk-delete')?.addEventListener('click', () => {
+      FF.Modals.confirm('Delete the selected elements?', () => {
+        FF.dispatch({type:FF.ACTIONS.BULK_DELETE});
+        announce('Selected elements deleted');
+      });
     });
 
     document.getElementById('btn-clear-canvas')?.addEventListener('click', () => {

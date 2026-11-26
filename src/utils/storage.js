@@ -63,21 +63,36 @@ FF.Storage = (() => {
       console.warn('[Storage] Load failed:', err);
       return null;
     }
-    if (!parsed || typeof parsed !== 'object' || parsed.version !== FF.SCHEMA_VERSION) {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      loadStatus = 'invalid';
+      return null;
+    }
+    const isCurrentEnvelope = parsed.version === FF.SCHEMA_VERSION && parsed.data && typeof parsed.data === 'object';
+    const isLegacyPayload = parsed.version === undefined && parsed.formConfig && Array.isArray(parsed.elements);
+    if (!isCurrentEnvelope && !isLegacyPayload) {
       loadStatus = 'unsupported';
       return null;
     }
-    const validation = FF.Validation.validateImport(parsed.data);
+    const data = isCurrentEnvelope ? parsed.data : {
+      formConfig: Object.assign({}, FF.DEFAULT_FORM_CONFIG, parsed.formConfig),
+      elements: parsed.elements,
+      activeTheme: parsed.activeTheme,
+    };
+    if (!data.formConfig || typeof data.formConfig !== 'object') {
+      loadStatus = 'invalid';
+      return null;
+    }
+    data.formConfig = Object.assign({}, FF.DEFAULT_FORM_CONFIG, data.formConfig);
+    if (!['default','dark','minimal','corporate'].includes(data.activeTheme)) data.activeTheme = 'default';
+    const validation = FF.Validation.validateImport(data);
     if (!validation.valid) {
       loadStatus = 'invalid';
       return null;
     }
-    const data=parsed.data;
+    loadStatus = isLegacyPayload ? 'migrated' : 'loaded';
     if(data.formConfig.customCss!==undefined&&!FF.Safe.checkCustomCss(data.formConfig.customCss).ok) {
       data.formConfig.customCss='';
       loadStatus='sanitized';
-    } else {
-      loadStatus='loaded';
     }
     return data;
   }

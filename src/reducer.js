@@ -11,6 +11,8 @@ FF.ACTIONS = {
   MULTI_SELECT:       'MULTI_SELECT',
   CLEAR_SELECTION:    'CLEAR_SELECTION',
   BULK_DELETE:        'BULK_DELETE',
+  BULK_DUPLICATE:     'BULK_DUPLICATE',
+  BULK_MOVE:          'BULK_MOVE',
   UPDATE_FORM_CONFIG: 'UPDATE_FORM_CONFIG',
   SET_THEME:          'SET_THEME',
   SET_ZOOM:           'SET_ZOOM',
@@ -34,12 +36,27 @@ function cloneElements(elements) {
   return elements.map(el => JSON.parse(JSON.stringify(el, (k, v) => v instanceof Set ? [...v] : v)));
 }
 
-function pushUndo(state) {
-  const snapshot = {
+function captureSnapshot(state) {
+  return {
     elements: cloneElements(state.elements),
     formConfig: JSON.parse(JSON.stringify(state.formConfig)),
+    selectedElementId: state.selectedElementId,
+    multiSelectedIds: [...state.multiSelectedIds],
+    activeTheme: state.activeTheme,
   };
-  state.undoStack.push(snapshot);
+}
+
+function restoreSnapshot(state, snapshot) {
+  state.elements = cloneElements(snapshot.elements);
+  state.formConfig = JSON.parse(JSON.stringify(snapshot.formConfig));
+  state.activeTheme = ['default','dark','minimal','corporate'].includes(snapshot.activeTheme) ? snapshot.activeTheme : 'default';
+  const ids = new Set(state.elements.map(element => element.id));
+  state.selectedElementId = ids.has(snapshot.selectedElementId) ? snapshot.selectedElementId : null;
+  state.multiSelectedIds = new Set((snapshot.multiSelectedIds || []).filter(id => ids.has(id)));
+}
+
+function pushUndo(state) {
+  state.undoStack.push(captureSnapshot(state));
   if (state.undoStack.length > FF.MAX_HISTORY) state.undoStack.shift();
   state.redoStack = [];
 }
@@ -51,9 +68,9 @@ FF.dispatch = function dispatch(action) {
   switch (action.type) {
 
     case A.ADD_ELEMENT: {
-      pushUndo(state);
       const el = action.element;
-      if (!el || !FF.Validation.FIELD_TYPES.has(el.type) || state.elements.length >= 200 || !FF.Safe.isSafeId(el.id) || state.elements.some(existing => existing.id === el.id)) break;
+      if (!el || !el.props || !FF.Validation.FIELD_TYPES.has(el.type) || state.elements.length >= 200 || !FF.Safe.isSafeId(el.id) || state.elements.some(existing => existing.id === el.id)) break;
+      pushUndo(state);
       const requestedIndex = Number.isInteger(action.insertIndex) ? action.insertIndex : state.elements.length;
       const insertAt = Math.max(0, Math.min(state.elements.length, requestedIndex));
       const newElements = [...state.elements];
@@ -69,13 +86,14 @@ FF.dispatch = function dispatch(action) {
     }
 
     case A.REMOVE_ELEMENT: {
-      pushUndo(state);
       const idx = state.elements.findIndex(e => e.id === action.id);
       if (idx !== -1) {
+        pushUndo(state);
         const removed = state.elements[idx];
         state.elements = state.elements.filter(e => e.id !== action.id);
         state.elements.forEach((e, i) => { e.order = i; });
         if (state.selectedElementId === action.id) state.selectedElementId = null;
+        state.multiSelectedIds.delete(action.id);
         state.isDirty = true;
         state.changeCount = (state.changeCount || 0) + 1;
         logActivity('Removed element: ' + removed.props.label);
@@ -110,9 +128,9 @@ FF.dispatch = function dispatch(action) {
     }
 
     case A.REORDER_ELEMENTS: {
-      pushUndo(state);
       const { fromIndex, toIndex } = action;
       if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex) || fromIndex < 0 || fromIndex >= state.elements.length || toIndex < 0 || toIndex >= state.elements.length || fromIndex === toIndex) break;
+      pushUndo(state);
       const arr = [...state.elements];
       const [moved] = arr.splice(fromIndex, 1);
       arr.splice(toIndex, 0, moved);
@@ -124,14 +142,13 @@ FF.dispatch = function dispatch(action) {
     }
 
     case A.DUPLICATE_ELEMENT: {
-      pushUndo(state);
       const src = state.elements.find(e => e.id === action.id);
       if (src && state.elements.length < 200) {
+        pushUndo(state);
         const copy = JSON.parse(JSON.stringify(src));
         copy.id = FF.Storage.generateId();
         copy.props.label = src.props.label + ' (Copy)';
-        copy.meta.createdAt = new Date().toISOString();
-        copy.meta.updatedAt = new Date().toISOString();
+        copy.meta = Object.assign({}, copy.meta, {createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
         const srcIdx = state.elements.findIndex(e => e.id === action.id);
         state.elements.splice(srcIdx + 1, 0, copy);
         state.elements.forEach((e, i) => { e.order = i; });
@@ -144,12 +161,12 @@ FF.dispatch = function dispatch(action) {
     }
 
     case A.MOVE_ELEMENT: {
-      pushUndo(state);
       const { id, direction } = action;
       const idx = state.elements.findIndex(e => e.id === id);
-      if (idx === -1) break;
+      if (idx === -1 || !['up','down'].includes(direction)) break;
       const newIdx = direction === 'up' ? idx - 1 : idx + 1;
       if (newIdx < 0 || newIdx >= state.elements.length) break;
+      pushUndo(state);
       const arr = [...state.elements];
       [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
       arr.forEach((e, i) => { e.order = i; });
@@ -160,15 +177,16 @@ FF.dispatch = function dispatch(action) {
     }
 
     case A.SELECT_ELEMENT: {
-      state.selectedElementId = action.id;
+      state.selectedElementId = state.elements.some(element => element.id === action.id) ? action.id : null;
       state.multiSelectedIds = new Set();
       break;
     }
 
     case A.MULTI_SELECT: {
+      if (!state.elements.some(element => element.id === action.id)) break;
       const ids = new Set(state.multiSelectedIds);
-      if (ids.has(action.id)) { ids.delete(action.id); }
-      else { ids.add(action.id); }
+      if (ids.has(action.id)) ids.delete(action.id);
+      else ids.add(action.id);
       state.multiSelectedIds = ids;
       state.selectedElementId = null;
       break;
@@ -181,16 +199,69 @@ FF.dispatch = function dispatch(action) {
     }
 
     case A.BULK_DELETE: {
+      const requested = Array.isArray(action.ids) ? action.ids : [...state.multiSelectedIds];
+      const toDelete = new Set(requested.filter(id => state.elements.some(element => element.id === id)));
+      if (!toDelete.size) break;
       pushUndo(state);
-      const toDelete = action.ids || [...state.multiSelectedIds];
-      if (!toDelete.length) break;
-      state.elements = state.elements.filter(e => !toDelete.includes(e.id));
+      state.elements = state.elements.filter(e => !toDelete.has(e.id));
       state.elements.forEach((e, i) => { e.order = i; });
       state.selectedElementId = null;
       state.multiSelectedIds = new Set();
       state.isDirty = true;
-      state.changeCount = (state.changeCount || 0) + toDelete.length;
-      logActivity('Bulk deleted ' + toDelete.length + ' elements');
+      state.changeCount = (state.changeCount || 0) + toDelete.size;
+      logActivity('Bulk deleted ' + toDelete.size + ' elements');
+      break;
+    }
+
+    case A.BULK_DUPLICATE: {
+      const requested = Array.isArray(action.ids) ? action.ids : [...state.multiSelectedIds];
+      const selected = new Set(requested);
+      const sources = state.elements.filter(element => selected.has(element.id));
+      const copies = sources.slice(0, Math.max(0, 200 - state.elements.length));
+      if (!copies.length) break;
+      pushUndo(state);
+      const nextElements = [];
+      const copiedIds = new Set();
+      state.elements.forEach(element => {
+        nextElements.push(element);
+        if (!selected.has(element.id) || !copies.includes(element)) return;
+        const copy = JSON.parse(JSON.stringify(element));
+        copy.id = FF.Storage.generateId();
+        copy.props.label = (copy.props.label || copy.type) + ' (Copy)';
+        copy.meta = Object.assign({}, copy.meta, {createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+        nextElements.push(copy);
+        copiedIds.add(copy.id);
+      });
+      state.elements = nextElements;
+      state.elements.forEach((element,index)=>{element.order=index;});
+      state.selectedElementId = null;
+      state.multiSelectedIds = copiedIds;
+      state.isDirty = true;
+      state.changeCount = (state.changeCount || 0) + copies.length;
+      logActivity('Bulk duplicated ' + copies.length + ' elements');
+      break;
+    }
+
+    case A.BULK_MOVE: {
+      const selected = new Set(action.ids || [...state.multiSelectedIds]);
+      if (!selected.size || !['up','down'].includes(action.direction)) break;
+      const indexes = state.elements.map((element,index)=>selected.has(element.id)?index:-1).filter(index=>index!==-1);
+      if (!indexes.length || (action.direction==='up'&&indexes[0]===0) || (action.direction==='down'&&indexes[indexes.length-1]===state.elements.length-1)) break;
+      pushUndo(state);
+      const nextElements = [...state.elements];
+      if (action.direction==='up') {
+        indexes.forEach(index=>{
+          if(index>0&&!selected.has(nextElements[index-1].id)) [nextElements[index-1],nextElements[index]]=[nextElements[index],nextElements[index-1]];
+        });
+      } else {
+        indexes.slice().reverse().forEach(index=>{
+          if(index<nextElements.length-1&&!selected.has(nextElements[index+1].id)) [nextElements[index],nextElements[index+1]]=[nextElements[index+1],nextElements[index]];
+        });
+      }
+      nextElements.forEach((element,index)=>{element.order=index;});
+      state.elements=nextElements;
+      state.isDirty=true;
+      logActivity('Bulk moved ' + indexes.length + ' elements ' + action.direction);
       break;
     }
 
@@ -261,14 +332,8 @@ FF.dispatch = function dispatch(action) {
     case A.UNDO: {
       if (!state.undoStack.length) break;
       const snapshot = state.undoStack.pop();
-      state.redoStack.push({
-        elements: cloneElements(state.elements),
-        formConfig: JSON.parse(JSON.stringify(state.formConfig)),
-      });
-      state.elements = snapshot.elements;
-      state.formConfig = snapshot.formConfig;
-      state.selectedElementId = null;
-      state.multiSelectedIds = new Set();
+      state.redoStack.push(captureSnapshot(state));
+      restoreSnapshot(state, snapshot);
       state.isDirty = true;
       logActivity('Undo');
       break;
@@ -277,14 +342,8 @@ FF.dispatch = function dispatch(action) {
     case A.REDO: {
       if (!state.redoStack.length) break;
       const snapshot = state.redoStack.pop();
-      state.undoStack.push({
-        elements: cloneElements(state.elements),
-        formConfig: JSON.parse(JSON.stringify(state.formConfig)),
-      });
-      state.elements = snapshot.elements;
-      state.formConfig = snapshot.formConfig;
-      state.selectedElementId = null;
-      state.multiSelectedIds = new Set();
+      state.undoStack.push(captureSnapshot(state));
+      restoreSnapshot(state, snapshot);
       state.isDirty = true;
       logActivity('Redo');
       break;

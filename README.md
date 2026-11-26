@@ -51,9 +51,9 @@ See [Architecture](docs/ARCHITECTURE.md) for the module map and data flow.
 
 | Control | Implementation | Verification |
 |---|---|---|
-| HTML output encoding | `src/utils/safe.js`, `FF.Safe.escapeHtml` | Reviewed, not covered by tests |
-| Import key and shape checks | `src/utils/safe.js`, `FF.Safe.hasDangerousKeys`; `src/utils/validation.js`, `validateImport` | Reviewed, not covered by tests |
-| Strict import limits | `src/utils/validation.js`, `validateImport` | Reviewed, not covered by tests |
+| HTML output encoding | `src/utils/safe.js`, `FF.Safe.escapeHtml` | Node regression tests |
+| Import key, shape and conditional-reference checks | `src/utils/safe.js`, `FF.Safe.hasDangerousKeys`; `src/utils/validation.js`, `validateImport` | Node regression tests |
+| Strict import limits and field constraints | `src/utils/validation.js`, `validateImport` | Node regression tests |
 | Custom CSS policy | `src/utils/safe.js`, `checkCustomCss`; `src/components/toolbar.js`, `applyCustomCss` | Reviewed, not covered by tests |
 | Redirect URL validation | `src/utils/safe.js`, `isSafeRedirectUrl` | Existing unit test |
 
@@ -79,6 +79,7 @@ Open `http://localhost:8080`. The application loads highlight.js and qrcode.js f
 - Pathological regular expressions may still take time to evaluate.
 - CDN assets require a network connection.
 - Automated browser tests are not included; browser versions are not represented as a tested compatibility matrix.
+- Supported legacy unversioned local form payloads are normalized to the current storage envelope on the next successful save; unknown future schema versions remain untouched.
 
 ## Roadmap
 

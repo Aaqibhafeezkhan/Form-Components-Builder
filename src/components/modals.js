@@ -3,16 +3,43 @@ window.FF = window.FF || {};
 FF.Modals = (() => {
 
   const TEMPLATES = FF.TEMPLATES;
+  const modalOpeners = new Map();
+  const modalKeyHandlers = new Map();
+
+  function getModalFocusable(modal) {
+    return [...modal.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(node => !node.hidden && node.getAttribute('aria-hidden') !== 'true');
+  }
 
   function openModal(modalId) {
     const modal = document.getElementById(modalId);
     const overlay = document.getElementById('modal-overlay');
     if (!modal || !overlay) return;
+    if (modal.hidden) modalOpeners.set(modalId, document.activeElement);
     modal.hidden = false;
     overlay.setAttribute('aria-hidden', 'false');
     overlay.classList.add('modal-overlay--visible');
     overlay.onclick = () => closeModal(modalId);
-    const firstFocusable = modal.querySelector('button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
+    const onKeydown = event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeModal(modalId);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = getModalFocusable(modal);
+      if (!focusable.length) { event.preventDefault(); modal.focus(); return; }
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === modal)) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    const previousHandler = modalKeyHandlers.get(modalId);
+    if (previousHandler) modal.removeEventListener('keydown', previousHandler);
+    modalKeyHandlers.set(modalId, onKeydown);
+    modal.addEventListener('keydown', onKeydown);
+    const firstFocusable = getModalFocusable(modal)[0];
     if (firstFocusable) requestAnimationFrame(() => firstFocusable.focus());
   }
 
@@ -20,20 +47,36 @@ FF.Modals = (() => {
     const modal = document.getElementById(modalId);
     const overlay = document.getElementById('modal-overlay');
     if (modal) modal.hidden = true;
+    if (modal && modalKeyHandlers.has(modalId)) {
+      modal.removeEventListener('keydown', modalKeyHandlers.get(modalId));
+      modalKeyHandlers.delete(modalId);
+    }
     const anyOpen = document.querySelectorAll('.modal:not([hidden])');
     if (!anyOpen.length && overlay) {
       overlay.classList.remove('modal-overlay--visible');
       overlay.setAttribute('aria-hidden', 'true');
     }
+    const opener = modalOpeners.get(modalId);
+    modalOpeners.delete(modalId);
+    if (opener && opener.isConnected && typeof opener.focus === 'function') requestAnimationFrame(() => opener.focus());
   }
 
   function closeAllModals() {
-    document.querySelectorAll('.modal').forEach(m => { m.hidden = true; });
+    const openers = [...modalOpeners.values()];
+    document.querySelectorAll('.modal').forEach(modal => {
+      const handler = modalKeyHandlers.get(modal.id);
+      if (handler) modal.removeEventListener('keydown', handler);
+      modal.hidden = true;
+    });
+    modalKeyHandlers.clear();
+    modalOpeners.clear();
     const overlay = document.getElementById('modal-overlay');
     if (overlay) {
       overlay.classList.remove('modal-overlay--visible');
       overlay.setAttribute('aria-hidden', 'true');
     }
+    const opener = openers[0];
+    if (opener && opener.isConnected && typeof opener.focus === 'function') requestAnimationFrame(() => opener.focus());
   }
 
   function confirm(message, onConfirm, { title = 'Confirm', okLabel = 'Confirm', dangerOk = true } = {}) {
