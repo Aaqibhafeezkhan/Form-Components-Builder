@@ -60,7 +60,8 @@ FF.Toolbar = (() => {
       styleEl.id = 'custom-css-style';
       document.head.appendChild(styleEl);
     }
-    styleEl.textContent = FF.appState.formConfig.customCss || '';
+    const css = FF.Safe.checkCustomCss(FF.appState.formConfig.customCss || '');
+    styleEl.textContent = css.ok ? FF.appState.formConfig.customCss || '' : '';
   }
 
   function initKeyboardShortcuts() {

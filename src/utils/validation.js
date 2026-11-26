@@ -4,6 +4,7 @@ FF.Validation = (() => {
   const OPS = new Set(['equals','not_equals','contains','is_empty','is_not_empty']);
   const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
   const isEmpty = value => value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0);
+  const stringWithin = (object,key,max) => object[key] === undefined || (typeof object[key] === 'string' && object[key].length <= max);
   function validateField(element, value) {
     const props = isObject(element && element.props) ? element.props : {};
     const rules = isObject(props.validation) ? props.validation : {};
@@ -19,6 +20,11 @@ FF.Validation = (() => {
       if (!Number.isFinite(number)) return fail(label + ' must be a number.');
       if (rules.min !== undefined && number < Number(rules.min)) return fail(label + ' is below the minimum.');
       if (rules.max !== undefined && number > Number(rules.max)) return fail(label + ' is above the maximum.');
+    }
+    if (typeof value === 'string' && rules.pattern !== undefined && String(rules.pattern).length <= 200 && value.length <= 2000) {
+      try {
+        if (!new RegExp(rules.pattern).test(value)) return fail(label + ' does not match the required format.');
+      } catch(error) {}
     }
     return { valid: true, message: '' };
   }
@@ -47,24 +53,49 @@ FF.Validation = (() => {
     return result;
   }
   function testRegex(pattern, value) {
-    try { return { valid: new RegExp(pattern).test(value), error: null }; }
+    const source=String(pattern==null?'':pattern);
+    const input=String(value==null?'':value);
+    if(source.length>200) return {valid:false,error:'Pattern must be 200 characters or fewer.'};
+    if(input.length>2000) return {valid:false,error:'Test value must be 2,000 characters or fewer.'};
+    try { return { valid: new RegExp(source).test(input), error: null }; }
     catch (error) { return { valid: false, error: error.message }; }
   }
-  function validateImport(data) {
+  function validateImport(data, options) {
+    const strict=!!(options&&options.strict);
     const errors = [];
     if (!isObject(data)) return { valid: false, errors: ['Root must be an object.'] };
+    if (FF.Safe.hasDangerousKeys(data)) return {valid:false,errors:['Import contains a dangerous object key or exceeds the supported nesting limits.']};
     if (!isObject(data.formConfig)) errors.push('Form configuration is missing.');
     if (!Array.isArray(data.elements) || data.elements.length > 200) errors.push('Elements must be an array containing no more than 200 fields.');
     if (errors.length) return { valid: false, errors };
     const ids = new Set();
+    const allIds = new Set(data.elements.filter(isObject).map(element=>String(element.id||'')));
     data.elements.forEach((element, index) => {
-      if (!isObject(element) || !element.props) { errors.push('Element ' + index + ' is incomplete.'); return; }
-      if (!/^[A-Za-z0-9_-]{1,80}$/.test(String(element.id || ''))) errors.push('Element ' + index + ' has an invalid ID.');
+      if (!isObject(element) || !isObject(element.props)) { errors.push('Element ' + index + ' is incomplete.'); return; }
+      if (!FF.Safe.isSafeId(element.id)) errors.push('Element ' + index + ' has an invalid ID.');
       else if (ids.has(element.id)) errors.push('Duplicate element ID: ' + element.id);
       else ids.add(element.id);
       if (!TYPES.has(element.type)) errors.push('Element ' + index + ' has an unsupported type.');
+      if (strict) {
+        ['label','placeholder','helperText'].forEach(key=>{
+          if(!stringWithin(element.props,key,500)) errors.push('Element '+index+' '+key+' must be a string of at most 500 characters.');
+        });
+        if(element.props.options!==undefined&&(!Array.isArray(element.props.options)||element.props.options.length>200||element.props.options.some(option=>typeof option!=='string'||option.length>200))) errors.push('Element '+index+' options must contain no more than 200 strings of at most 200 characters each.');
+        if(element.conditionalLogic!==undefined) {
+          const rules=element.conditionalLogic&&element.conditionalLogic.rules;
+          if(!isObject(element.conditionalLogic)||!Array.isArray(rules)||rules.length>20||rules.some(rule=>!isObject(rule)||!FF.Safe.isSafeId(rule.field)||!OPS.has(rule.operator))) errors.push('Element '+index+' has invalid conditional logic rules.');
+        }
+      }
     });
     if (data.formConfig.redirectUrl && !FF.Safe.isSafeRedirectUrl(data.formConfig.redirectUrl)) errors.push('Redirect URL must use HTTP or HTTPS.');
+    if (strict) {
+      const cfg=data.formConfig;
+      [['title',200],['description',2000],['submitLabel',100],['successMessage',1000]].forEach(([key,max])=>{
+        if(!stringWithin(cfg,key,max)) errors.push('Form '+key+' must be a string of at most '+max+' characters.');
+      });
+      if(cfg.pages!==undefined&&(!Array.isArray(cfg.pages)||cfg.pages.length>50)) errors.push('Form pages must contain no more than 50 entries.');
+      if(cfg.customCss!==undefined&&!FF.Safe.checkCustomCss(cfg.customCss).ok) errors.push('Custom CSS contains a disallowed construct or exceeds 20,000 characters.');
+    }
     return { valid: errors.length === 0, errors };
   }
   return { validateField, evaluateRule, evaluateConditionalLogic, testRegex, validateImport, FIELD_TYPES: TYPES };

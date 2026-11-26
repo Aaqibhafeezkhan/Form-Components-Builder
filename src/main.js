@@ -23,6 +23,12 @@ FF.init = function () {
 
   FF.Toolbar.applyTheme(FF.appState.activeTheme);
 
+  if (storageStatus === 'sanitized') {
+    const savedEl = document.getElementById('status-last-saved');
+    if (savedEl) { savedEl.textContent = 'Unsafe custom CSS removed from saved form'; savedEl.setAttribute('role', 'status'); }
+    FF.appState.isDirty = true;
+  }
+
   if (storageStatus === 'invalid' || storageStatus === 'unsupported') {
     const savedEl = document.getElementById('status-last-saved');
     if (savedEl) {

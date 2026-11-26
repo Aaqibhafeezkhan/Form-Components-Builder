@@ -77,11 +77,11 @@ FF.PropertiesPanel = (() => {
       html += `<div class="prop-field prop-field--row">
         <div>
           <label class="prop-label" for="prop-slider-min">Min</label>
-          <input type="number" id="prop-slider-min" class="prop-input" value="${(props.validation && props.validation.min) || 0}" data-validprop="min">
+          <input type="number" id="prop-slider-min" class="prop-input" value="${escHtml(String(props.validation && props.validation.min !== undefined ? props.validation.min : 0))}" data-validprop="min">
         </div>
         <div>
           <label class="prop-label" for="prop-slider-max">Max</label>
-          <input type="number" id="prop-slider-max" class="prop-input" value="${(props.validation && props.validation.max) || 100}" data-validprop="max">
+          <input type="number" id="prop-slider-max" class="prop-input" value="${escHtml(String(props.validation && props.validation.max !== undefined ? props.validation.max : 100))}" data-validprop="max">
         </div>
       </div>`;
     }
@@ -112,11 +112,11 @@ FF.PropertiesPanel = (() => {
         html += `<div class="prop-field prop-field--row">
           <div>
             <label class="prop-label" for="prop-minlength">Min Length</label>
-            <input type="number" id="prop-minlength" class="prop-input" min="0" value="${v.minLength || ''}" data-validprop="minLength">
+            <input type="number" id="prop-minlength" class="prop-input" min="0" value="${escHtml(String(v.minLength === undefined ? '' : v.minLength))}" data-validprop="minLength">
           </div>
           <div>
             <label class="prop-label" for="prop-maxlength">Max Length</label>
-            <input type="number" id="prop-maxlength" class="prop-input" min="0" value="${v.maxLength || ''}" data-validprop="maxLength">
+            <input type="number" id="prop-maxlength" class="prop-input" min="0" value="${escHtml(String(v.maxLength === undefined ? '' : v.maxLength))}" data-validprop="maxLength">
           </div>
         </div>`;
       }
@@ -202,7 +202,7 @@ FF.PropertiesPanel = (() => {
               <label class="prop-label">IF field</label>
               <select class="prop-input prop-input--sm" data-rule="${i}" data-rule-prop="field">
                 <option value="">-- Select field --</option>
-                ${otherElements.map(e => `<option value="${e.id}" ${rule.field === e.id ? 'selected' : ''}>${e.props.label}</option>`).join('')}
+                ${otherElements.map(e => `<option value="${escHtml(e.id)}" ${rule.field === e.id ? 'selected' : ''}>${escHtml(e.props.label)}</option>`).join('')}
               </select>
             </div>
             <div class="logic-rule__row">

@@ -2,101 +2,7 @@ window.FF = window.FF || {};
 
 FF.Modals = (() => {
 
-  const TEMPLATES = [
-    {
-      name: 'Contact Form',
-      description: 'Simple contact form with name, email, and message.',
-      elements: [
-        { type: 'text',     label: 'Full Name',     placeholder: 'Your name',          required: true  },
-        { type: 'email',    label: 'Email Address', placeholder: 'you@example.com',    required: true  },
-        { type: 'tel',      label: 'Phone Number',  placeholder: '+1 (555) 000-0000',  required: false },
-        { type: 'textarea', label: 'Message',       placeholder: 'How can we help?',   required: true  },
-        { type: 'checkbox', label: 'I agree to the Privacy Policy', required: true },
-      ],
-      formConfig: { title: 'Contact Us', description: 'Fill out the form and we\'ll get back to you.', submitLabel: 'Send Message' },
-    },
-    {
-      name: 'Registration Form',
-      description: 'User registration with account details.',
-      elements: [
-        { type: 'text',     label: 'First Name',      placeholder: 'First name',   required: true },
-        { type: 'text',     label: 'Last Name',        placeholder: 'Last name',    required: true },
-        { type: 'email',    label: 'Email',            placeholder: 'Email address',required: true },
-        { type: 'text',     label: 'Username',         placeholder: 'Choose a username', required: true },
-        { type: 'dropdown', label: 'Country',          options: ['United States', 'United Kingdom', 'Canada', 'Australia', 'Other'], required: true },
-        { type: 'date',     label: 'Date of Birth',    required: false },
-        { type: 'checkbox', label: 'I accept the Terms of Service', required: true },
-      ],
-      formConfig: { title: 'Create Account', description: 'Join us today!', submitLabel: 'Create Account' },
-    },
-    {
-      name: 'Survey',
-      description: 'Customer satisfaction survey.',
-      elements: [
-        { type: 'rating',        label: 'Overall Satisfaction' },
-        { type: 'radio',         label: 'How did you hear about us?', options: ['Search Engine', 'Social Media', 'Friend Referral', 'Advertisement', 'Other'], required: true },
-        { type: 'checkbox-group',label: 'What features do you use?',  options: ['Dashboard', 'Reports', 'Integrations', 'API', 'Support'] },
-        { type: 'textarea',      label: 'Any additional feedback?',   placeholder: 'Share your thoughts...' },
-      ],
-      formConfig: { title: 'Customer Survey', description: 'Help us improve our service.', submitLabel: 'Submit Survey' },
-    },
-    {
-      name: 'Job Application',
-      description: 'Job application form with work history.',
-      elements: [
-        { type: 'text',     label: 'Full Name',        placeholder: 'Legal name', required: true },
-        { type: 'email',    label: 'Email',             placeholder: 'Work email', required: true },
-        { type: 'tel',      label: 'Phone',             required: true },
-        { type: 'url',      label: 'LinkedIn Profile',  placeholder: 'https://linkedin.com/in/...' },
-        { type: 'dropdown', label: 'Position Applied For', options: ['Software Engineer', 'Product Manager', 'Designer', 'Marketing', 'Sales', 'Other'], required: true },
-        { type: 'textarea', label: 'Cover Letter',      placeholder: 'Tell us about yourself...', required: true },
-        { type: 'file',     label: 'Resume / CV',       required: true },
-        { type: 'date',     label: 'Available Start Date' },
-      ],
-      formConfig: { title: 'Job Application', description: 'We\'re excited to learn more about you.', submitLabel: 'Submit Application' },
-    },
-    {
-      name: 'Feedback Form',
-      description: 'Product feedback collection form.',
-      elements: [
-        { type: 'text',     label: 'Your Name',      placeholder: 'Optional', required: false },
-        { type: 'email',    label: 'Email',           placeholder: 'Optional', required: false },
-        { type: 'rating',   label: 'Rate your experience' },
-        { type: 'radio',    label: 'Would you recommend us?', options: ['Definitely', 'Probably', 'Not sure', 'No'], required: true },
-        { type: 'textarea', label: 'What can we improve?', placeholder: 'Your feedback matters...' },
-      ],
-      formConfig: { title: 'Share Your Feedback', description: 'Your opinion helps us grow.', submitLabel: 'Send Feedback' },
-    },
-    {
-      name: 'Event RSVP',
-      description: 'Event registration and attendance form.',
-      elements: [
-        { type: 'text',          label: 'Full Name',        required: true },
-        { type: 'email',         label: 'Email',            required: true },
-        { type: 'radio',         label: 'Will you attend?', options: ['Yes', 'No', 'Maybe'], required: true },
-        { type: 'number',        label: 'Number of Guests', placeholder: '0' },
-        { type: 'dropdown',      label: 'Meal Preference',  options: ['Standard', 'Vegetarian', 'Vegan', 'Gluten-Free'] },
-        { type: 'checkbox-group',label: 'Sessions you plan to attend', options: ['Keynote', 'Workshop A', 'Workshop B', 'Networking Lunch', 'Panel Discussion'] },
-        { type: 'textarea',      label: 'Special Requests', placeholder: 'Accessibility needs, dietary restrictions, etc.' },
-      ],
-      formConfig: { title: 'Event RSVP', description: 'Please RSVP by the deadline.', submitLabel: 'Confirm RSVP' },
-    },
-    {
-      name: 'Order Form',
-      description: 'Simple product order and shipping form.',
-      elements: [
-        { type: 'text',     label: 'Full Name',        required: true },
-        { type: 'email',    label: 'Email',            required: true },
-        { type: 'tel',      label: 'Phone',            required: true },
-        { type: 'textarea', label: 'Shipping Address', required: true },
-        { type: 'dropdown', label: 'Product',          options: ['Basic Plan', 'Pro Plan', 'Enterprise Plan'], required: true },
-        { type: 'number',   label: 'Quantity',         placeholder: '1' },
-        { type: 'radio',    label: 'Payment Method',   options: ['Credit Card', 'PayPal', 'Bank Transfer'], required: true },
-        { type: 'textarea', label: 'Order Notes',      placeholder: 'Any special instructions?' },
-      ],
-      formConfig: { title: 'Place an Order', description: 'Complete the form to place your order.', submitLabel: 'Place Order' },
-    },
-  ];
+  const TEMPLATES = FF.TEMPLATES;
 
   function openModal(modalId) {
     const modal = document.getElementById(modalId);
@@ -186,10 +92,10 @@ FF.Modals = (() => {
     function renderTabs() {
       const code = getCode(activeTab);
       const lang = getLang(activeTab);
-      let highlighted = code;
+      let highlighted = FF.Safe.escapeHtml(code);
       try {
         if (window.hljs) highlighted = window.hljs.highlight(code, { language: lang }).value;
-      } catch(e) {}
+      } catch(e) { highlighted = FF.Safe.escapeHtml(code); }
 
       body.innerHTML = `
         <div class="export-tabs" role="tablist">
@@ -239,8 +145,9 @@ FF.Modals = (() => {
         qrContainer.style.display = '';
         qrContainer.innerHTML = '<p style="font-size:12px;color:var(--color-text-muted);margin-bottom:8px">QR code for form JSON data URL:</p><div id="qr-code-inner"></div>';
         const dataStr = 'data:application/json;charset=utf-8,' + encodeURIComponent(FF.Export.buildFormJson(state));
-        const safeStr = dataStr.length > 2953 ? dataStr.substring(0, 2953) : dataStr;
-        if (window.QRCode) {
+        if (dataStr.length > 2953) {
+          qrContainer.innerHTML = '<p style="color:var(--color-danger)">The form is too large for a QR code (about 2.9 KB). Use the JSON download instead.</p>';
+        } else if (window.QRCode) {
           new QRCode(document.getElementById('qr-code-inner'), {
             text: safeStr,
             width: 180,
@@ -300,7 +207,7 @@ FF.Modals = (() => {
       let data = parsed;
       if (parsed.data && parsed.version) data = parsed.data;
 
-      const validation = FF.Validation.validateImport(data);
+      const validation = FF.Validation.validateImport(data, {strict:true});
       if (!validation.valid) {
         showImportError(errEl, 'Import validation failed:\n' + validation.errors.join('\n'));
         return;
@@ -424,6 +331,8 @@ FF.Modals = (() => {
       const selectedTheme = activeThemeBtn ? activeThemeBtn.getAttribute('data-theme') : state.activeTheme;
 
       if (!FF.Safe.isSafeRedirectUrl(redirectUrl)) { const input=document.getElementById('set-redirect'); if(input){input.setAttribute('aria-invalid','true');input.focus();} announce('Enter a valid HTTP or HTTPS redirect URL.'); return; }
+      const cssCheck = FF.Safe.checkCustomCss(customCss);
+      if (!cssCheck.ok) { const input=document.getElementById('set-custom-css'); if(input){input.setAttribute('aria-invalid','true');input.focus();} announce(cssCheck.reason); return; }
       FF.dispatch({ type: FF.ACTIONS.UPDATE_FORM_CONFIG, config: { title, description, submitLabel, successMessage, redirectUrl, validationMode, customCss } });
       FF.dispatch({ type: FF.ACTIONS.SET_THEME, theme: selectedTheme });
       closeModal('modal-settings');
@@ -470,6 +379,8 @@ FF.Modals = (() => {
             el.order = i;
             return el;
           });
+          const validation = FF.Validation.validateImport({formConfig:tpl.formConfig,elements,activeTheme:FF.appState.activeTheme},{strict:true});
+          if (!validation.valid) { announce('Template could not be loaded: ' + validation.errors.join(' ')); return; }
           FF.dispatch({ type: FF.ACTIONS.LOAD_TEMPLATE, formConfig: tpl.formConfig, elements, name: tpl.name });
           closeModal('modal-templates');
           announce('Template "' + tpl.name + '" loaded');
@@ -488,10 +399,10 @@ FF.Modals = (() => {
         const area = document.getElementById('template-preview-area');
         if (!area) return;
         area.style.display = '';
-        const fieldsList = tpl.elements.map(e => `<li>${e.label || e.type}${e.required ? ' *' : ''}</li>`).join('');
+        const fieldsList = tpl.elements.map(e => `<li>${FF.Safe.escapeHtml(e.label || e.type)}${e.required ? ' *' : ''}</li>`).join('');
         area.innerHTML = `<div class="template-preview-box">
-          <h4>${tpl.formConfig.title}</h4>
-          <p>${tpl.formConfig.description}</p>
+          <h4>${FF.Safe.escapeHtml(tpl.formConfig.title)}</h4>
+          <p>${FF.Safe.escapeHtml(tpl.formConfig.description)}</p>
           <ul>${fieldsList}</ul>
           <button class="btn btn--ghost btn--sm" id="btn-close-tpl-preview">Close Preview</button>
         </div>`;
@@ -501,15 +412,23 @@ FF.Modals = (() => {
 
     document.getElementById('btn-save-template')?.addEventListener('click', () => {
       const name = document.getElementById('template-save-name')?.value?.trim();
-      if (!name) { alert('Please enter a template name.'); return; }
-      const inlineTemplates = JSON.parse(localStorage.getItem('ff_custom_templates') || '[]');
+      if (!name) { announce('Please enter a template name.'); return; }
+      if (name.length > 100) { announce('Template names must be 100 characters or fewer.'); return; }
+      let inlineTemplates;
+      try { inlineTemplates = JSON.parse(localStorage.getItem('ff_custom_templates') || '[]'); }
+      catch (error) { announce('Saved templates could not be read; existing data was left unchanged.'); return; }
+      if (!Array.isArray(inlineTemplates)) { announce('Saved templates are invalid; existing data was left unchanged.'); return; }
+      if (inlineTemplates.length >= 50) { announce('A maximum of 50 custom templates can be saved.'); return; }
+      const templateValidation = FF.Validation.validateImport({formConfig:FF.appState.formConfig,elements:FF.appState.elements,activeTheme:FF.appState.activeTheme},{strict:true});
+      if (!templateValidation.valid) { announce('Current form cannot be saved as a template: ' + templateValidation.errors.join(' ')); return; }
       inlineTemplates.push({
         name,
         formConfig: FF.appState.formConfig,
         elements: FF.appState.elements,
         savedAt: new Date().toISOString(),
       });
-      localStorage.setItem('ff_custom_templates', JSON.stringify(inlineTemplates));
+      try { localStorage.setItem('ff_custom_templates', JSON.stringify(inlineTemplates)); }
+      catch (error) { announce('Template could not be saved. Check available browser storage.'); return; }
       announce('Template "' + name + '" saved');
       closeModal('modal-templates');
     });
@@ -542,7 +461,7 @@ FF.Modals = (() => {
       : FF.activityLog.map(entry => {
           const d = new Date(entry.timestamp);
           const time = d.toLocaleTimeString();
-          return `<li class="history-item"><span class="history-item__time">${time}</span><span class="history-item__msg">${entry.message}</span></li>`;
+          return `<li class="history-item"><span class="history-item__time">${time}</span><span class="history-item__msg">${FF.Safe.escapeHtml(entry.message)}</span></li>`;
         }).join('');
 
     body.innerHTML = `${exportCsvBtn}<ul class="history-list" role="log" aria-live="polite">${rows}</ul>`;
