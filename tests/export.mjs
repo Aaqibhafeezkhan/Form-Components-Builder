@@ -18,7 +18,7 @@ test('JSX export emits literals and valid component identifiers',()=>{
   const jsx=FF.Export.buildReactJsx(makeState(title,'label { value }'));
   assert.match(jsx,/export default function (Form123SurveyForm|GeneratedForm|CafeOrderForm)\(/);
   assert.equal(jsx.includes('/*'),false);
-  assert.match(jsx,/label \\{/);
+  assert.ok(jsx.includes('{'+JSON.stringify('label { value }')+'}'));
  }
 });
 test('JSON Schema keeps zero constraints and field formats',()=>{

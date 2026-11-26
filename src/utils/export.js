@@ -111,7 +111,7 @@ FF.Export = (() => {
       if(!el||!FF.Safe.isSafeId(el.id)) return '';
       const p=el.props||{},id=el.id,label=p.label||'',ph=p.placeholder||'',helper=p.helperText||'';
       const req=p.required?' required={true}':'';
-      const labelLine='<label htmlFor='+q(id)+'>'+q(label)+(p.required?' + " *"':'')+'</label>';
+      const labelLine='<label htmlFor='+q(id)+'>'+q(String(label)+(p.required?' *':''))+'</label>';
       const helperLine=helper?'<p className="helper">'+q(helper)+'</p>':'';
       if(['text','email','tel','url','number'].includes(el.type)) return '      <div className="field-wrap">\n        '+labelLine+'\n        <input type="'+el.type+'" id='+q(id)+' name='+q(id)+' placeholder='+q(ph)+req+' />\n        '+helperLine+'\n      </div>';
       if(el.type==='textarea') return '      <div className="field-wrap">\n        '+labelLine+'\n        <textarea id='+q(id)+' name='+q(id)+' placeholder='+q(ph)+' rows={4}'+req+' />\n        '+helperLine+'\n      </div>';

@@ -379,6 +379,8 @@ FF.Modals = (() => {
             el.order = i;
             return el;
           });
+          const validation = FF.Validation.validateImport({formConfig:tpl.formConfig,elements,activeTheme:FF.appState.activeTheme},{strict:true});
+          if (!validation.valid) { announce('Template could not be loaded: ' + validation.errors.join(' ')); return; }
           FF.dispatch({ type: FF.ACTIONS.LOAD_TEMPLATE, formConfig: tpl.formConfig, elements, name: tpl.name });
           closeModal('modal-templates');
           announce('Template "' + tpl.name + '" loaded');
@@ -417,6 +419,8 @@ FF.Modals = (() => {
       catch (error) { announce('Saved templates could not be read; existing data was left unchanged.'); return; }
       if (!Array.isArray(inlineTemplates)) { announce('Saved templates are invalid; existing data was left unchanged.'); return; }
       if (inlineTemplates.length >= 50) { announce('A maximum of 50 custom templates can be saved.'); return; }
+      const templateValidation = FF.Validation.validateImport({formConfig:FF.appState.formConfig,elements:FF.appState.elements,activeTheme:FF.appState.activeTheme},{strict:true});
+      if (!templateValidation.valid) { announce('Current form cannot be saved as a template: ' + templateValidation.errors.join(' ')); return; }
       inlineTemplates.push({
         name,
         formConfig: FF.appState.formConfig,
