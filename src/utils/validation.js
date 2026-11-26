@@ -24,7 +24,9 @@ FF.Validation = (() => {
     if (typeof value === 'string' && rules.pattern !== undefined && String(rules.pattern).length <= 200 && value.length <= 2000) {
       try {
         if (!new RegExp(rules.pattern).test(value)) return fail(label + ' does not match the required format.');
-      } catch(error) {}
+      } catch(error) {
+        return fail(label + ' has an invalid validation pattern.');
+      }
     }
     return { valid: true, message: '' };
   }
@@ -81,9 +83,24 @@ FF.Validation = (() => {
           if(!stringWithin(element.props,key,500)) errors.push('Element '+index+' '+key+' must be a string of at most 500 characters.');
         });
         if(element.props.options!==undefined&&(!Array.isArray(element.props.options)||element.props.options.length>200||element.props.options.some(option=>typeof option!=='string'||option.length>200))) errors.push('Element '+index+' options must contain no more than 200 strings of at most 200 characters each.');
+        const validation=element.props.validation;
+        if(validation!==undefined) {
+          if(!isObject(validation)) errors.push('Element '+index+' validation settings must be an object.');
+          else {
+            ['min','max','minLength','maxLength'].forEach(key=>{
+              if(validation[key]!==undefined&&(!Number.isFinite(Number(validation[key]))||Number(validation[key])<0)) errors.push('Element '+index+' '+key+' must be a non-negative number.');
+            });
+            if(validation.min!==undefined&&validation.max!==undefined&&Number(validation.min)>Number(validation.max)) errors.push('Element '+index+' minimum cannot exceed its maximum.');
+            if(validation.minLength!==undefined&&validation.maxLength!==undefined&&Number(validation.minLength)>Number(validation.maxLength)) errors.push('Element '+index+' minimum length cannot exceed its maximum length.');
+            if(validation.pattern!==undefined) {
+              if(typeof validation.pattern!=='string'||validation.pattern.length>200) errors.push('Element '+index+' pattern must be a string of at most 200 characters.');
+              else { try { new RegExp(validation.pattern); } catch(error) { errors.push('Element '+index+' has an invalid regular-expression pattern.'); } }
+            }
+          }
+        }
         if(element.conditionalLogic!==undefined) {
           const rules=element.conditionalLogic&&element.conditionalLogic.rules;
-          if(!isObject(element.conditionalLogic)||!Array.isArray(rules)||rules.length>20||rules.some(rule=>!isObject(rule)||!FF.Safe.isSafeId(rule.field)||!OPS.has(rule.operator))) errors.push('Element '+index+' has invalid conditional logic rules.');
+          if(!isObject(element.conditionalLogic)||!Array.isArray(rules)||rules.length>20||rules.some(rule=>!isObject(rule)||!FF.Safe.isSafeId(rule.field)||!allIds.has(String(rule.field))||!OPS.has(rule.operator))) errors.push('Element '+index+' has invalid conditional logic rules.');
         }
       }
     });

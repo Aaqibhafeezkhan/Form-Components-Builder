@@ -23,6 +23,8 @@ FF.Preview = (() => {
 
   const formValues = new Map();
   let signaturePads = [];
+  let previewOpener = null;
+  let previewKeydownHandler = null;
 
   function getFieldValue(elId) {
     return formValues.get(elId);
@@ -62,12 +64,29 @@ FF.Preview = (() => {
       wrap.appendChild(errEl);
     }
     errEl.textContent = message;
+    errEl.id = 'preview-error-' + wrap.getAttribute('data-preview-id');
+    const control = wrap.querySelector('input:not([type="hidden"]),select,textarea,[tabindex]');
+    if (control) {
+      control.setAttribute('aria-invalid', 'true');
+      const describedBy = new Set((control.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean));
+      describedBy.add(errEl.id);
+      control.setAttribute('aria-describedby', [...describedBy].join(' '));
+    }
     wrap.classList.add('preview-field--invalid');
   }
 
   function clearFieldError(wrap) {
     const errEl = wrap.querySelector('.preview-field-error');
-    if (errEl) errEl.textContent = '';
+    if (errEl) {
+      errEl.textContent = '';
+      const control = wrap.querySelector('input:not([type="hidden"]),select,textarea,[tabindex]');
+      if (control) {
+        control.removeAttribute('aria-invalid');
+        const remaining = (control.getAttribute('aria-describedby') || '').split(/\s+/).filter(id => id && id !== errEl.id);
+        if (remaining.length) control.setAttribute('aria-describedby', remaining.join(' '));
+        else control.removeAttribute('aria-describedby');
+      }
+    }
     wrap.classList.remove('preview-field--invalid');
   }
 
@@ -367,23 +386,27 @@ FF.Preview = (() => {
     errorSummary.id = 'preview-error-summary';
     errorSummary.setAttribute('role', 'alert');
     errorSummary.setAttribute('aria-live', 'assertive');
+    errorSummary.setAttribute('tabindex', '-1');
     errorSummary.style.display = 'none';
 
     previewForm.addEventListener('submit', e => {
       e.preventDefault();
       const errors = [];
+      let firstInvalidControl = null;
       state.elements.forEach(el => {
         const fieldWrap = previewForm.querySelector(`[data-preview-id="${el.id}"]`);
         if (!fieldWrap) return;
         if (!validateField(el, fieldWrap, previewForm)) {
           errors.push(el.props.label || el.type);
+          if (!firstInvalidControl) firstInvalidControl = fieldWrap.querySelector('input:not([type="hidden"]):not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
         }
       });
 
       if (errors.length) {
         errorSummary.style.display = '';
         errorSummary.innerHTML = `<strong>Please fix the following errors:</strong><ul>${errors.map(e => `<li>${FF.Safe.escapeHtml(e)}</li>`).join('')}</ul>`;
-        errorSummary.focus();
+        if (firstInvalidControl) firstInvalidControl.focus();
+        else errorSummary.focus();
       } else {
         errorSummary.style.display = 'none';
         previewForm.style.display = 'none';
@@ -492,9 +515,23 @@ FF.Preview = (() => {
     const modal = document.getElementById('modal-preview');
     const overlay = document.getElementById('modal-overlay');
     if (!modal || !overlay) return;
+    previewOpener = document.activeElement;
     modal.hidden = false;
     overlay.classList.add('modal-overlay--visible');
     overlay.setAttribute('aria-hidden', 'false');
+    if (previewKeydownHandler) modal.removeEventListener('keydown', previewKeydownHandler);
+    previewKeydownHandler = event => {
+      if (event.key !== 'Tab') return;
+      const focusable = [...modal.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(node => !node.hidden && node.getAttribute('aria-hidden') !== 'true');
+      if (!focusable.length) { event.preventDefault(); return; }
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === modal)) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    modal.addEventListener('keydown', previewKeydownHandler);
     renderPreviewForm(modal);
     setDevice(FF.appState.previewDevice || 'desktop');
     const firstFocusable = modal.querySelector('button,input,select,textarea');
@@ -504,11 +541,18 @@ FF.Preview = (() => {
   function close() {
     const modal = document.getElementById('modal-preview');
     const overlay = document.getElementById('modal-overlay');
-    if (modal) modal.hidden = true;
+    if (modal) {
+      modal.hidden = true;
+      if (previewKeydownHandler) modal.removeEventListener('keydown', previewKeydownHandler);
+    }
+    previewKeydownHandler = null;
     if (overlay) {
       overlay.classList.remove('modal-overlay--visible');
       overlay.setAttribute('aria-hidden', 'true');
     }
+    const opener = previewOpener;
+    previewOpener = null;
+    if (opener && opener.isConnected && typeof opener.focus === 'function') opener.focus();
   }
 
   function escHtml(str) {
