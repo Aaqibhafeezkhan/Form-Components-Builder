@@ -122,3 +122,18 @@ test('bulk move preserves selected order and blocks moves beyond canvas edges',(
   FF.dispatch({type:FF.ACTIONS.BULK_MOVE,direction:'down'});
   assert.equal(FF.appState.elements.map(item=>item.id).join(','),'one,four,two,three');
 });
+
+
+test('standalone HTML export leaves browser validation enabled and validates required checkbox groups',()=>{
+  const data=sample();
+  data.elements=[
+    {id:'name',type:'text',props:{label:'Name',required:true,validation:{minLength:3}}},
+    {id:'topics',type:'checkbox-group',props:{label:'Topics',required:true,options:['One','Two']}}
+  ];
+  const html=FF.Export.buildHtml(data);
+  assert.doesNotMatch(html,/<form id="main-form" novalidate/);
+  assert.match(html,/<input type="text"[^>]*required/);
+  assert.match(html,/data-required-group="true"/);
+  assert.match(html,/reportValidity\(\)/);
+  assert.match(html,/setCustomValidity/);
+});

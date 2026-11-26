@@ -419,7 +419,7 @@ FF.PropertiesPanel = (() => {
     const panel = document.getElementById('panel-properties');
     if (collapseBtn && panel) {
       collapseBtn.addEventListener('click', () => {
-        const collapsed = panel.classList.toggle('panel--collapsed');
+        const collapsed = panel.classList.toggle('collapsed');
         collapseBtn.setAttribute('aria-expanded', String(!collapsed));
       });
     }

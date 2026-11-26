@@ -7,3 +7,4 @@
 5. Use Conventional Commit subjects.
 6. Sign commits with `git commit -s` and include the DCO sign-off.
 7. Keep documentation accurate and add regression tests for behavior changes.
+8. Run browser smoke tests with `npm install --no-save --package-lock=false playwright`, `npx playwright install chromium`, and `npm run test:browser`.

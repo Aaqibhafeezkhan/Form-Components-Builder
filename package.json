@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.mjs"
+    "test": "node --test tests/*.mjs",
+    "test:browser": "node tests/browser/smoke.mjs"
   },
   "description": "Browser-only drag-and-drop form builder with validation, preview and export tools.",
   "license": "MIT",

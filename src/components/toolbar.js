@@ -220,8 +220,43 @@ FF.Toolbar = (() => {
     applyTheme(FF.appState.activeTheme || 'default');
   }
 
+  function initMobilePanelControls() {
+    const controls = [
+      { buttonId: 'btn-mobile-palette', panelId: 'panel-palette', collapseId: 'palette-collapse-btn' },
+      { buttonId: 'btn-mobile-properties', panelId: 'panel-properties', collapseId: 'properties-collapse-btn' },
+    ];
+    const closeAll = () => {
+      controls.forEach(({ buttonId, panelId }) => {
+        document.getElementById(panelId)?.classList.remove('mobile-open');
+        document.getElementById(buttonId)?.setAttribute('aria-expanded', 'false');
+      });
+    };
+    controls.forEach(({ buttonId, panelId, collapseId }) => {
+      const button = document.getElementById(buttonId);
+      const panel = document.getElementById(panelId);
+      if (!button || !panel) return;
+      button.addEventListener('click', () => {
+        const shouldOpen = !panel.classList.contains('mobile-open');
+        closeAll();
+        if (shouldOpen) {
+          panel.classList.remove('collapsed');
+          panel.classList.add('mobile-open');
+          button.setAttribute('aria-expanded', 'true');
+        }
+      });
+      document.getElementById(collapseId)?.addEventListener('click', () => {
+        panel.classList.remove('mobile-open');
+        button.setAttribute('aria-expanded', 'false');
+      });
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeAll();
+    });
+  }
+
   function init() {
     initUndoRedo();
+    initMobilePanelControls();
     initZoomControls();
     initKeyboardShortcuts();
     initFormTitleInput();

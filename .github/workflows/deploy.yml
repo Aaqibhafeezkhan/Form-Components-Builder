@@ -23,6 +23,12 @@ jobs:
         with:
           node-version: 20
       - run: npm test
+      - name: Install browser smoke-test dependency
+        run: npm install --no-save --package-lock=false playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run browser smoke tests
+        run: npm run test:browser
 
   deploy:
     if: github.event_name != 'pull_request'
